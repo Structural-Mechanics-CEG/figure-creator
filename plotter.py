@@ -656,142 +656,6 @@ def plot(structure, seed=None):
     plt.show()
     
 
-        
-A = Point(0,0, 'A', labelpos=('top', 'left'))
-B = Point(10,0, 'B', labelpos=('top', 'right'))
-D = Point(0,4, 'D', labelpos=('bottom', 'right'))
-C = Point(2,4, 'C', labelpos=('bottom', 'left'))
-E = Point(-1.5,4, 'E', labelpos=('top', 'right'))
-M1 = Moment(D, -20, clock_wise=True)
-F1 = PointLoad(C, 10, dxdy=(5,12), labelpos=('center', 'right'), anglelabel=True, anglelabelflip=True)
-L1 = Length(A, D, 'y', ypos='left')
-L2 = Length(E, C, 'x')
-AD = Beam(A, D)
-AD.add_hinge(is_begin=False)
-EC = Beam(E, C)
-CB = Beam(B, C, labelpos=('bottom','left'), anglelabel=True, anglelabelflip=True)
-q1 = DistributedLoad(C, B, 10, 20, angle=CB.angle-90, n_arrow=10)
-print(CB.angle)
-As = Support(A, 'pinned')
-Bs = Support(B, 'pinned')
-Es = Support(E, 'fixed', angle=50+180)
-RS = RotationSpring(A)
-s = Structure()
-s.add_beam(AD)
-s.add_beam(EC)
-s.add_beam(CB)
-s.add_hinge(C)
-s.add_support(As)
-s.add_support(Bs)
-s.add_support(Es)
-s.add_moment(M1)
-s.add_pointload(F1)
-#s.add_distributedload(q1)
-s.add_rotationspring(RS)
-s.add_length(L1)
-s.add_length(L2)
-
-A = Point(0,0, 'A', labelpos=('top', 'left'))
-B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
-As = Support(A, 'pinned', angle=90)
-Bs = Support(B, 'pinned', angle=90)
-AB = Beam(A, B, anglelabel=True)
-L = Length(A, B, ax='y', ypos='right')
-F = DistributedLoad(A, B, 40, 40, angle=180)
-st = Structure()
-st.add_beam(AB)
-st.add_support(As)
-st.add_support(Bs)
-st.add_length(L)
-st.add_distributedload(F)
-
-A = Point(0,0, 'A')
-B = Point(3, A.y, 'B')
-C = Point(2.1, A.y, 'Ç')
-D = Point(1, 0)
-E = Point(1.5, 0)
-G = Point(1.5, -1)
-As = Support(A, 'fixed', 90+180)
-Bs = Support(B, 'roller')
-AB = Beam(A, B)
-EG = Beam(E, G)
-EG.add_hinge()
-L1 = Length(A, C, ax='x')
-L2 = Length(C, B, ax='x')
-F = PointLoad(C, 50, 'kN', (7, 24), anglelabel=True)
-M = Moment(B, 20, angle=20)
-q = DistributedLoad(E, G, 5, 15, angle=180, labelpos_end=('bottom', 'center'))
-R = RotationSpring(B, 10)
-s1 = Structure()
-s1.add_beam(AB)
-s1.add_beam(EG)
-s1.add_support(As)
-s1.add_support(Bs)
-s1.add_length(L1)
-s1.add_length(L2)
-s1.add_hinge(D)
-s1.add_pointload(F)
-s1.add_moment(M)
-s1.add_distributedload(q)
-s1.add_rotationspring(R)
-
-
-A = Point(0, 6, 'A', ('top', 'right'))
-B = Point(4.5, 0, 'B', ('top', 'right'))
-C = Point(10, 0, 'C', ('top', 'left'))
-D = Point(10, 6, 'D', ('bottom','center'))
-E = Point(20, 6, 'E', ('bottom','center'))
-S = Point(16, 6, 'S', ('bottom','right'))
-AE = Beam(A, E)
-AB = Beam(A, B, anglelabel=True)
-CS = Beam(C, S, anglelabel=True)
-As = Support(A, 'roller', angle=90)
-Bs = Support(B, 'pinned')
-Cs = Support(C, 'fixed')
-CS.add_hinge(False)
-q = DistributedLoad(D, E, 18)
-M = Moment(A, 10, angle=20)
-F = PointLoad(Point(8,6), 10, dxdy=(-2, 4), anglelabel=True)
-Ly = Length(E, Point(20,0), 'y', ypos='right')
-Lx1 = Length(Point(0,0), B)
-Lx2 = Length(B,C)
-Lx3 = Length(C, Point(16,0))
-Lx4 = Length(Point(16,0), Point(20,0))
-s2 = Structure()
-s2.add_beam(AE, AB, CS)
-s2.add_support(As, Bs, Cs)
-s2.add_distributedload(q)
-s2.add_moment(M)
-s2.add_pointload(F)
-s2.add_length(Ly, Lx1, Lx2, Lx3, Lx4)
-
-for Dy in [2,3,4]:
-    A = Point(0,0, 'A', ('center', 'left'))
-    B = Point(4,0, 'B', ('center', 'right'))
-    C = Point(2,0, 'C', ('bottom', 'center'))
-    D = Point(2, Dy, 'D', ('bottom', 'right'))
-    AB = Beam(A, B)
-    CD = Beam(C, D)
-    As = Support(A, 'roller')
-    Bs = Support(B, 'pinned')
-    Ds = Support(D, 'fixed', angle=180)
-    q = DistributedLoad(A, B, 2, 13)
-    M = Moment(C, 10, angle=20+180, labelpos=('bottom', 'center'))
-    F = PointLoad(B, 10, dxdy=(2, 4), anglelabel=False)
-    Ly = Length(C, D, 'y', ypos='right')
-    Lx1 = Length(A, C)
-    Lx2 = Length(C, B)
-    s3 = Structure()
-    s3.add_beam(AB, CD)
-    s3.add_support(As, Bs, Ds)
-    s3.add_distributedload(q)
-    s3.add_moment(M)
-    s3.add_pointload(F)
-    s3.add_length(Ly, Lx1, Lx2)
-    plot(s3, seed=f'{Dy}')
-
-
-
 # Begin voor M,V,N-lijnen
 class MVNconstant():
     def __init__(self, beam: Beam, y=0, Vsignpositive='up'):
@@ -887,18 +751,12 @@ class NGraph():
 Mg = MGraph()
 M11 = MVNconstant(CB, 1)
 Mg.add_constant(M11)
-#Mg.plot()
-## Week 8
-# schalen!!
-
-## Week 9
-# M/V/N-lijnen
 
 
+# TODO:
 # translatieveer toevoegen
 # 3D
 # kabel
-
 # doorsnede plot
 
 ## Later:
@@ -909,7 +767,4 @@ Mg.add_constant(M11)
 # figuren opslaan met hash code -> testen met klein aantal figuren
 # handleiding maken + voorbeelden
 
-
-# max 20x6, 16x1, 6x1
-# min 11x6, 4x1, 3x1
 
