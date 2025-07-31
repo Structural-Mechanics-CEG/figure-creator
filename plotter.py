@@ -231,11 +231,8 @@ class Structure():
             ymax = max(p.y, ymax)
         return ymin, ymax
 
-def scaler(min, max, value):
-    return
 
 def plot(structure, seed=None):
-    print(structure._pointloads)
     plt.plot([0,0],[0,0],color='black',linewidth=2)
     axs = plt.gca()
     axs.axis('equal')
@@ -245,7 +242,10 @@ def plot(structure, seed=None):
     ymin, ymax = structure.yminmax()
     ylength = max(1, ymax - ymin)
     print(xmin, xmax, ymin, ymax)
-    scaler = (np.sqrt(xlength*ylength) - np.sqrt(3*1)) / (np.sqrt(20*6) - np.sqrt(3*1))
+    # scaler = (np.sqrt(xlength*ylength) - np.sqrt(3*1)) / (np.sqrt(20*6) - np.sqrt(3*1))
+    scaler = (max(xlength,ylength) - max(3,1)) / (max(20,6) - max(3,1))
+    print(scaler)
+    # scaler = 2*(xlength*ylength - 3*1) / (20*6 - 3*1)
     # plt.xlim(xmin - 2, xmax + 2)
     # plt.ylim(ymin - 2, ymax + 2)
     #axs.margins(0.2)
@@ -402,7 +402,6 @@ def plot(structure, seed=None):
             y += u * length
         if pointload.labely == 'bottom':
             y -= u * length 
-        print(x,y)
         if pointload.value is not None:
             axs.annotate(text=str(pointload.value) + ' ' + pointload.unit, xy=(x,y), ha='center', va='center')
         else:
@@ -436,7 +435,6 @@ def plot(structure, seed=None):
         length_mid = lmin + scaler * (lmax - lmin)
         beam_length = dload.begin.distance_to(dload.end)
         beam_angle = dload.end.angle(dload.begin)
-        print(beam_angle)
         n_arrow = dload.n_arrow
         dist = beam_length/(n_arrow - 1)
         v_mid = (dload.begin_value + dload.end_value)/2
@@ -638,7 +636,6 @@ def plot(structure, seed=None):
             else:
                 x = xmax + ux
             text = str(round(abs(y2 - y1), 1)) + ' m' if length.altlabel is None else length.altlabel
-            print(text, (y2+y1)/2, x+0.3)
             axs.annotate(text='', xy=(x,y1), xytext=(x,y2), arrowprops=dict(arrowstyle='<->',shrinkA=0,shrinkB=0))
             umin = 0.3
             umax = 1
@@ -652,7 +649,7 @@ def plot(structure, seed=None):
     axs.margins(0.5)
     if seed is not None:
         constructiehash = hashlib.sha256(seed.encode()).hexdigest()
-        plt.savefig(constructiehash+'.png')
+        plt.savefig(constructiehash+'.svg', format='svg')
     plt.show()
     
 
@@ -748,12 +745,9 @@ class NGraph():
     def add_parabolic(self, piece: MVNparabolic):
         self.plist.append(piece)
 
-Mg = MGraph()
-M11 = MVNconstant(CB, 1)
-Mg.add_constant(M11)
-
 
 # TODO:
+# MVN-lijnen
 # translatieveer toevoegen
 # 3D
 # kabel
@@ -763,8 +757,21 @@ Mg.add_constant(M11)
 # -Hinge in beam gaat niet altijd de goede kant op: wss verschilt het of het wel of niet het begin van de balk is
 # -Meerdere beams/lengths/etc in 1x toevoegen
 # radius
-# Naar github exporteren
-# figuren opslaan met hash code -> testen met klein aantal figuren
+# -Naar github exporteren
+# -figuren opslaan met hash code -> testen met klein aantal figuren
 # handleiding maken + voorbeelden
 
-
+A = Point(0,0, 'A', labelpos=('top', 'left'))
+B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
+As = Support(A, 'pinned', angle=90)
+Bs = Support(B, 'pinned', angle=90)
+AB = Beam(A, B, anglelabel=True)
+L = Length(A, B, ax='y', ypos='right')
+F = DistributedLoad(A, B, 40, 40, angle=AB.angle-90)
+st = Structure()
+st.add_beam(AB)
+st.add_support(As)
+st.add_support(Bs)
+st.add_length(L)
+st.add_distributedload(F)
+plot(st)
