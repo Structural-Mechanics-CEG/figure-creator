@@ -653,113 +653,21 @@ def plot(structure, seed=None):
     plt.show()
     
 
-# Begin voor M,V,N-lijnen
-class MVNconstant():
-    def __init__(self, beam: Beam, y=0, Vsignpositive='up'):
-        self.beam = beam
-        self.y = y
-        self.vsign = Vsignpositive
 
-class MVNlinear():
-    def __init__(self, beam: Beam, xlist, ylist, Vsignpositive='up'):
-        self.beam = beam
-        self.x1 = xlist[0]
-        self.x2 = xlist[1]
-        self.y1 = ylist[0]
-        self.y2 = ylist[1]
-        self.vsign = Vsignpositive
-
-class MVNparabolic():
-    def __init__(self, beam: Beam, xlist, ylist, Vsignpositive='up'):
-        self.beam = beam
-        self.xlist = xlist
-        self.ylist = ylist
-        self.vsign = Vsignpositive
-
-
-class MGraph():
-    def __init__(self):
-        self.clist = []
-        self.llist = []
-        self.plist = []
-
-    def add_constant(self, piece: MVNconstant):
-        self.clist.append(piece)
-
-    def add_linear(self, piece: MVNlinear):
-        self.llist.append(piece)
-
-    def add_parabolic(self, piece: MVNparabolic):
-        self.plist.append(piece)
-
-    def plot(self):
-        axs = plt.gca()
-        axs.axis('equal')
-        for c in self.clist:
-            beam = c.beam
-            plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=2)
-            a = beam.angle - 0
-            x1 = beam.x1 - c.y * np.cos(np.radians(a))
-            y1 = beam.y1 + c.y * np.sin(np.radians(a))
-            x2 = beam.x2 - c.y * np.cos(np.radians(a))
-            y2 = beam.y2 + c.y * np.sin(np.radians(a))
-            plt.plot([x1, x2], [y1, y2], color='black', linewidth=1)
-
-        for l in self.llist:
-            beam = l.beam
-            plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=2)
-            
-
-        for p in self.plist:
-            beam = p.beam
-            plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=2)
-    
-                
-class VGraph():
-    def __init__(self):
-        self.clist = []
-        self.llist = []
-        self.plist = []
-
-    def add_constant(self, piece: MVNconstant):
-        self.clist.append(piece)
-
-    def add_linear(self, piece: MVNlinear):
-        self.llist.append(piece)
-
-    def add_parabolic(self, piece: MVNparabolic):
-        self.plist.append(piece)
-
-class NGraph():
-    def __init__(self):
-        self.clist = []
-        self.llist = []
-        self.plist = []
-
-    def add_constant(self, piece: MVNconstant):
-        self.clist.append(piece)
-
-    def add_linear(self, piece: MVNlinear):
-        self.llist.append(piece)
-
-    def add_parabolic(self, piece: MVNparabolic):
-        self.plist.append(piece)
 
 
 # TODO:
 # MVN-lijnen
 # translatieveer toevoegen
 # 3D
-# kabel
+# kabel, parabool toevoegen aan gewone 
 # doorsnede plot
 
 ## Later:
-# -Hinge in beam gaat niet altijd de goede kant op: wss verschilt het of het wel of niet het begin van de balk is
-# -Meerdere beams/lengths/etc in 1x toevoegen
+# - Hinge in beam gaat niet altijd de goede kant op: wss verschilt het of het wel of niet het begin van de balk is
+# - Label positie automatisch vinden
 # radius
-# -Naar github exporteren
-# -figuren opslaan met hash code -> testen met klein aantal figuren
-# handleiding maken + voorbeelden
+
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
