@@ -8,6 +8,19 @@ from sympy.functions.elementary.trigonometric import atan2
 from scipy.ndimage import rotate
 
 
+FORCE_COLORS = {
+    'red': '#800000',
+    'green': '#00CC99',
+    'blue': '#31859B',
+}
+
+
+def resolve_force_color(color: str) -> str:
+    if color not in FORCE_COLORS:
+        raise ValueError("Force color must be one of: 'red', 'green', 'blue'")
+    return FORCE_COLORS[color]
+
+
 class Point():
     def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0):
         self.x = x
@@ -92,7 +105,7 @@ class TranslationSpring():
         self.alt_label = alternative_label
 
 class PointLoad():
-    def __init__(self, point: Point, value: float, unit: str = 'kN', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = ''):
+    def __init__(self, point: Point, value: float, unit: str = 'kN', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red'):
         self.value = value
         self.dx = dxdy[0]
         self.dy = dxdy[1]
@@ -104,10 +117,11 @@ class PointLoad():
         self.labely = labelpos[0]
         self.labelflip = anglelabelflip
         self.alt_label = alternative_label
+        self.color = resolve_force_color(color)
 
 
 class DistributedLoad():
-    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None):
+    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red'):
         self.begin_value = begin_value
         self.end_value = end_value if end_value is not None else begin_value
         self.unit = unit
@@ -125,9 +139,10 @@ class DistributedLoad():
             self.labely_end = labelpos[0]
         self.alt_label_begin = alternative_label_begin
         self.alt_label_end = alternative_label_end
+        self.color = resolve_force_color(color)
 
 class Moment():
-    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = ''):
+    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red'):
         if value < 0:
             self.value = -value
             self.clock_wise = not clock_wise
@@ -139,7 +154,8 @@ class Moment():
         self.angle = angle
         self.labelx = labelpos[1]
         self.labely = labelpos[0]
-        self.alt_label = alternative_label 
+        self.alt_label = alternative_label
+        self.color = resolve_force_color(color)
 
 class Length():
     def __init__(self, point1: Point, point2: Point, ax: str='x', xpos: str = 'bottom', ypos: str ='left', alternative_label:str = None):
@@ -335,7 +351,7 @@ def plot(structure, seed=None):
         rmin = 0.5
         rmax = 2.5
         radius = rmin + scaler * (rmax - rmin)
-        m = Arc((moment.point.x, moment.point.y), width=radius, height = radius, angle=angle, theta1=0, theta2=150, color='#800000', alpha=1, linewidth=2)
+        m = Arc((moment.point.x, moment.point.y), width=radius, height = radius, angle=angle, theta1=0, theta2=150, color=moment.color, alpha=1, linewidth=2)
         axs.add_patch(m)
         
         arrowhead = FancyArrow(
@@ -346,7 +362,7 @@ def plot(structure, seed=None):
                     width=0.02*radius/rmin,
                     head_width=0.1*radius/rmin,
                     head_length=0.15*radius/rmin,
-                    color='#800000',
+                    color=moment.color,
                     alpha=1.0,
                     length_includes_head=True
                 )
@@ -386,7 +402,7 @@ def plot(structure, seed=None):
         ddy = pointload.dy * length / np.sqrt(pointload.dx**2 + pointload.dy**2)
         start = (pointload.x + ddx, pointload.y + ddy) # depends on angle and wanted length
 
-        axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color='#800000'))
+        axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=pointload.color))
 
         umin = 0.1
         umax = 0.1
@@ -442,7 +458,7 @@ def plot(structure, seed=None):
         # plot line
         plt.plot([dload.begin.x + 0.95 * length[0] * np.cos(np.radians(dload.angle)), dload.end.x + 0.95 * length[-1] * np.cos(np.radians(dload.angle))], 
                  [dload.begin.y + 0.95 * length[0] * np.sin(np.radians(dload.angle)), dload.end.y + 0.95 * length[-1] * np.sin(np.radians(dload.angle))], 
-                 color='#800000', linewidth=2)
+                 color=dload.color, linewidth=2)
         # plot arrows
         for i in range(n_arrow):
             tip = (dload.begin.x + i * dist * np.cos(np.radians(beam_angle)), 
@@ -450,7 +466,7 @@ def plot(structure, seed=None):
             start = (dload.begin.x + i * dist * np.cos(np.radians(beam_angle)) + length[i] * np.cos(np.radians(dload.angle)), 
                      dload.begin.y + i * dist * np.sin(np.radians(beam_angle)) + length[i] * np.sin(np.radians(dload.angle)))
             if np.sqrt((tip[0]-start[0])**2+(tip[1]-start[1])**2) > 0.1:
-                axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color='#800000'))
+                axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=dload.color))
 
         # display text at begin point
         x = dload.begin.x + length[0] * np.cos(np.radians(dload.angle))       
