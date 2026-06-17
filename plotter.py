@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pylab as plt
 from matplotlib.patches import Arc, Polygon, Circle, FancyArrow
 import matplotlib.ticker as plticker
+from matplotlib.figure import Figure
+from matplotlib.transforms import Bbox
 import hashlib
 from sympy.functions.elementary.trigonometric import atan2
 from scipy.ndimage import rotate
@@ -646,10 +648,34 @@ def plot(structure, seed=None):
         drawlength(l)
     axs.use_sticky_edges = False
     axs.autoscale()
-    axs.margins(0.5)
+    fig = plt.gcf()
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    def artist_bbox(artist):
+        if not artist.get_visible() or artist in {axs.patch, fig.patch}:
+            return None
+        if artist.__class__.__name__ in {'Spine', 'XAxis', 'YAxis'}:
+            return None
+        for getter_name in ('get_window_extent', 'get_tightbbox'):
+            try:
+                bbox = getattr(artist, getter_name)(renderer)
+            except Exception:
+                continue
+            if bbox is not None and bbox.width > 0 and bbox.height > 0:
+                return bbox
+        return None
+
+    artist_bboxes = [bbox for artist in axs.get_children() if (bbox := artist_bbox(artist)) is not None]
+
+    if artist_bboxes:
+        content_bbox = Bbox.union(artist_bboxes).transformed(fig.dpi_scale_trans.inverted())
+    else:
+        content_bbox = fig.get_tightbbox(renderer)
+        assert content_bbox is not None
+    content_bbox = content_bbox.padded(0.1)
     if seed is not None:
         constructiehash = hashlib.sha256(seed.encode()).hexdigest()
-        plt.savefig(constructiehash+'.svg', format='svg')
+        fig.savefig(constructiehash+'.svg', format='svg', bbox_inches=content_bbox)
     plt.show()
     
 
