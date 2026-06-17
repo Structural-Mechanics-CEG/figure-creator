@@ -128,7 +128,7 @@ class DistributedLoad():
 
 class Moment():
     def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = ''):
-        if value < 0:
+        if value is not None and value < 0:
             self.value = -value
             self.clock_wise = not clock_wise
         else:
@@ -366,10 +366,10 @@ def plot(structure, seed=None):
         if moment.labely == 'bottom':
             y -= 0.5*radius + u 
         
-        if moment.value is not None:
-            axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center')
-        else:
+        if moment.alt_label is not None:
             axs.annotate(text=moment.alt_label, xy=(x,y), ha='center', va='center')
+        elif moment.value is not None:
+            axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center')
 
 
     for h in structure._moments:
