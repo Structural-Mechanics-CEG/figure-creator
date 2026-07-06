@@ -144,8 +144,8 @@ class DistributedLoad():
         self.color = resolve_force_color(color)
 
 class Moment():
-    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red'):
-        if value < 0:
+    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = ''):
+        if value is not None and value < 0:
             self.value = -value
             self.clock_wise = not clock_wise
         else:
