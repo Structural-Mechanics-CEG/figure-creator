@@ -136,7 +136,7 @@ for Dy in [2,3,4]:
     s3.add_moment(M)
     s3.add_pointload(F)
     s3.add_length(Ly, Lx1, Lx2)
-    plot(s3, seed=f'{Dy}')
+    #plot(s3, seed=f'{Dy}')
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))

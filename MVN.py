@@ -1,5 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams.update({
+    'font.family': 'serif',
+    'font.serif': ['Times New Roman'],
+    'font.size': 12,
+})
 
 class MVNgraph():
     def __init__(self):
@@ -128,7 +133,7 @@ class MVNgraph():
         x_label_rotated, y_label_rotated = zip(*(self.rotate(beam, xi, yi)
                                         for xi, yi in zip(x_label, y_label)))
         for i in range(len(x_label_rotated)):
-            axs.annotate(value[i], (x_label_rotated[i], y_label_rotated[i]), ha='center',va='center')
+            axs.annotate(value[i], (x_label_rotated[i], y_label_rotated[i]), ha='center',va='center', fontfamily='Times New Roman', fontsize=12)
 
 
 class Mgraph(MVNgraph):

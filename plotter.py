@@ -1,6 +1,11 @@
 from math import sqrt, degrees
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams.update({
+    'font.family': 'serif',
+    'font.serif': ['Times New Roman'],
+    'font.size': 12,
+})
 from matplotlib.patches import Arc, Polygon, Circle, FancyArrow
 import matplotlib.ticker as plticker
 from matplotlib.figure import Figure
@@ -307,8 +312,8 @@ def plot(structure, seed=None):
             umin = 0.2
             umax = 0.6
             u = umin + scaler*(umax-umin)
-            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center')
-            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center')
+            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman')
+            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman')
 
     for b in structure._beams:
         drawbeam(b)
@@ -329,7 +334,7 @@ def plot(structure, seed=None):
         if point.labely == 'bottom':
             y -= l 
 
-        axs.annotate(text=point.label, xy=(x,y), ha='center', va='center')
+        axs.annotate(text=point.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
 
     for p in structure._points:
         drawpoint(p)
@@ -381,9 +386,9 @@ def plot(structure, seed=None):
             y -= 0.5*radius + u 
         
         if moment.alt_label is not None:
-            axs.annotate(text=moment.alt_label, xy=(x,y), ha='center', va='center')
+            axs.annotate(text=moment.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
         elif moment.value is not None:
-            axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center')
+            axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
 
 
     for h in structure._moments:
@@ -417,9 +422,9 @@ def plot(structure, seed=None):
         if pointload.labely == 'bottom':
             y -= u * length 
         if pointload.value is not None:
-            axs.annotate(text=str(pointload.value) + ' ' + pointload.unit, xy=(x,y), ha='center', va='center')
+            axs.annotate(text=str(pointload.value) + ' ' + pointload.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
         else:
-            axs.annotate(text=pointload.alt_label, xy=(x,y), ha='center', va='center')
+            axs.annotate(text=pointload.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
     
         if pointload.anglelabel: 
             dx1 = (1 - 2*int(pointload.labelflip)) * ddx/3
@@ -435,8 +440,8 @@ def plot(structure, seed=None):
             umax = 0.6
             u = umin + scaler*(umax-umin)
             plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black")
-            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center')
-            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center')
+            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman')
+            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman')
 
     
     for p in structure._pointloads:
@@ -480,9 +485,9 @@ def plot(structure, seed=None):
             y -= 0.2 * length_mid 
         
         if dload.alt_label_begin is None:
-            axs.annotate(text=str(dload.begin_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center')
+            axs.annotate(text=str(dload.begin_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
         else:
-            axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center')
+            axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
 
         # display text at end point
         x = dload.end.x + length[-1] * np.cos(np.radians(dload.angle))       
@@ -498,9 +503,9 @@ def plot(structure, seed=None):
             y -= 0.2 * length_mid 
         
         if dload.alt_label_end is None:
-            axs.annotate(text=str(dload.end_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center')
+            axs.annotate(text=str(dload.end_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
         else:
-            axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center')
+            axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
 
     for d in structure._distributedloads:
         drawdistributedload(d)
@@ -638,7 +643,7 @@ def plot(structure, seed=None):
             umin = 0.2
             umax = 1
             u = umin +scaler*(umax-umin)
-            axs.annotate(text=text,xy=((x2+x1)/2,y+u),ha='center',va='top')
+            axs.annotate(text=text,xy=((x2+x1)/2,y+u),ha='center',va='top', fontname='Times New Roman')
         else:
             y1 = length.point1.y
             y2 = length.point2.y
@@ -654,7 +659,7 @@ def plot(structure, seed=None):
             umin = 0.3
             umax = 1
             u = umin +scaler*(umax-umin)
-            axs.annotate(text=text,xy=(x+u, (y2+y1)/2),ha='center',va='center')
+            axs.annotate(text=text,xy=(x+u, (y2+y1)/2),ha='center',va='center', fontname='Times New Roman')
 
     for l in structure._lengths:
         drawlength(l)
