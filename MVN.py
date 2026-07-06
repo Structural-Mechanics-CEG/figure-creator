@@ -1,10 +1,7 @@
-import matplotlib.pylab as plt
 import numpy as np
-from plotter import Structure, Point, PointLoad, Beam, Moment, Length, DistributedLoad, Support, RotationSpring
-from plotter import plot
+import matplotlib.pyplot as plt
 
-
-class MVNgraph:
+class MVNgraph():
     def __init__(self):
         self.points = {}
         self.scale = 100
@@ -171,7 +168,6 @@ class Vgraph(MVNgraph):
             plt.plot(x_sign_rotated, y_sign_rotated, linewidth=1.5, color='black')
 
 
-    
 
 class Ngraph(MVNgraph):
     def draw_signs(self, beam, crossings, x, y):
@@ -200,35 +196,4 @@ class Ngraph(MVNgraph):
                 x_sign_rotated, y_sign_rotated = zip(*(self.rotate(beam, xi, yi)
                                             for xi, yi in zip(x_sign, y_sign)))
                 plt.plot(x_sign_rotated, y_sign_rotated, linewidth=1.5, color='black')
-
-
-
-
-A = Point(0,0, 'A', labelpos=('top', 'left'))
-B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
-C = Point(4, 8, 'C')
-AB = Beam(A, B, anglelabel=True)
-BC = Beam(B, C)
-
-M = Ngraph()
-M.add_beam(AB, (0,0), (0,2), (1,2), (2,3), (4,0), M.parabole(4, 4, 6, -1, 8, 4), (8,0))
-M.add_beam(BC, (0,0), (1, 3), M.parabole(1, 3, 1.5, -5, 2, 5), (2,0))
-#M.plot()
-
-
-
-X = Point(0,0)
-Y = Point(12, 0)
-XY = Beam(X, Y)
-
-V = Vgraph()
-V.add_beam(XY, (0,0), (2, 16), (2, -32), (8, 16), (10, 16), (10, 0), (12,0))
-#V.flip_sign(XY)
-#V.plot()
-
-N = Ngraph()
-N.add_beam(XY, (0,0), (2, 16), (2, -32), (8, 16), (10, 16), (10, 0), (12,0))
-#N.flip_sign(XY)
-N.plot()
-
-
+    

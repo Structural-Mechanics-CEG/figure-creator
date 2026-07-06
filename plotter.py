@@ -1,6 +1,6 @@
 from math import sqrt, degrees
 import numpy as np
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 from matplotlib.patches import Arc, Polygon, Circle, FancyArrow
 import matplotlib.ticker as plticker
 from matplotlib.figure import Figure
@@ -41,7 +41,6 @@ class Point():
     def distance_to(self, point):
         return sqrt((self.x - point.x)**2 + (self.y - point.y)**2)
         
-
 class Beam():
     def __init__(self, begin: Point, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False):
         self.begin = begin
@@ -121,7 +120,6 @@ class PointLoad():
         self.alt_label = alternative_label
         self.color = resolve_force_color(color)
 
-
 class DistributedLoad():
     def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red'):
         self.begin_value = begin_value
@@ -144,7 +142,7 @@ class DistributedLoad():
         self.color = resolve_force_color(color)
 
 class Moment():
-    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = ''):
+    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red'):
         if value is not None and value < 0:
             self.value = -value
             self.clock_wise = not clock_wise
@@ -167,7 +165,6 @@ class Length():
         self.xpos = xpos
         self.ypos = ypos
         self.altlabel =alternative_label
-
 
 class Structure():
     def __init__(self):
@@ -249,7 +246,6 @@ class Structure():
             ymax = max(p.y, ymax)
         return ymin, ymax
 
-
 def plot(structure, seed=None):
     plt.plot([0,0],[0,0],color='black',linewidth=2)
     axs = plt.gca()
@@ -297,7 +293,7 @@ def plot(structure, seed=None):
                 y += l
             if beam.labely == 'bottom':
                 y -= l
-            axs.annotate(text=beam.label, xy=(x,y), ha='center', va='center')
+            axs.annotate(text=beam.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
             
         if beam.anglelabel:
             dx1 = (1 - 2*int(beam.labelflip)) * (beam.x2 - beam.x1) / 4
@@ -693,9 +689,6 @@ def plot(structure, seed=None):
         constructiehash = hashlib.sha256(seed.encode()).hexdigest()
         fig.savefig(constructiehash+'.svg', format='svg', bbox_inches=content_bbox)
     plt.show()
-    
-
-
 
 
 # TODO:
