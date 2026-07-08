@@ -69,11 +69,11 @@ class Beam():
     def angle(self):
         return degrees(atan2(self.y2 - self.y1, self.x2 - self.x1))  
     
-    def add_hinge(self, is_begin: bool = True):
-        if is_begin:
-            self.hinges.append((self.begin, is_begin))
+    def add_hinge(self, loc: str = 'start'):
+        if loc == 'start':
+            self.hinges.append((self.begin, True))
         else:
-            self.hinges.append((self.end, is_begin))
+            self.hinges.append((self.end, False))
 
 class Support():
     def __init__(self, point: Point, support_type: str = 'fixed', angle: float = 0.0):
@@ -390,7 +390,6 @@ def plot(structure, seed=None):
         elif moment.value is not None:
             axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
 
-
     for h in structure._moments:
         drawmoment(h)
 
@@ -443,7 +442,6 @@ def plot(structure, seed=None):
             axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman')
             axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman')
 
-    
     for p in structure._pointloads:
         print(p)
         drawpointload(p)
@@ -663,6 +661,7 @@ def plot(structure, seed=None):
 
     for l in structure._lengths:
         drawlength(l)
+
     axs.use_sticky_edges = False
     axs.autoscale()
     fig = plt.gcf()
@@ -673,12 +672,20 @@ def plot(structure, seed=None):
             return None
         if artist.__class__.__name__ in {'Spine', 'XAxis', 'YAxis'}:
             return None
-        for getter_name in ('get_window_extent', 'get_tightbbox'):
+        if artist.__class__.__name__ == 'Annotation' and artist.get_text() == '':
+            getter_order = ('get_tightbbox',)
+        else:
+            getter_order = ('get_tightbbox', 'get_window_extent')
+
+        for getter_name in getter_order:
             try:
                 bbox = getattr(artist, getter_name)(renderer)
             except Exception:
                 continue
             if bbox is not None and bbox.width > 0 and bbox.height > 0:
+                 # Empty-text annotations can return a default tiny box at the origin.
+                if bbox.x0 == 0 and bbox.y0 == 0 and bbox.width <= 1 and bbox.height <= 1:
+                    continue
                 return bbox
         return None
 
@@ -693,6 +700,7 @@ def plot(structure, seed=None):
     if seed is not None:
         constructiehash = hashlib.sha256(seed.encode()).hexdigest()
         fig.savefig(constructiehash+'.svg', format='svg', bbox_inches=content_bbox)
+        #fig.savefig(constructiehash+'.svg', format='svg')
     plt.show()
 
 
