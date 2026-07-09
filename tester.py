@@ -81,7 +81,7 @@ s1.add_pointload(F)
 s1.add_moment(M)
 s1.add_distributedload(q)
 s1.add_rotationspring(R)
-plot(s1)
+#plot(s1)
 
 A = Point(0, 6, 'A', ('top', 'right'))
 B = Point(4.5, 0, 'B', ('top', 'right'))
@@ -111,7 +111,7 @@ s2.add_distributedload(q)
 s2.add_moment(M)
 s2.add_pointload(F)
 s2.add_length(Ly, Lx1, Lx2, Lx3, Lx4)
-plot(s2)
+#plot(s2)
 
 for Dy in [2,3,4]:
     A = Point(0,0, 'A', ('center', 'left'))
@@ -136,7 +136,7 @@ for Dy in [2,3,4]:
     s3.add_moment(M)
     s3.add_pointload(F)
     s3.add_length(Ly, Lx1, Lx2)
-    #plot(s3, seed=f'{Dy}')
+    plot(s3, name=f'{Dy}', format='png', is_seed=False)
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
@@ -163,5 +163,5 @@ V.add_beam(XY, (0,0), (2, 16), (2, -32), (8, 16), (10, 16), (10, 0), (12,0))
 N = Ngraph()
 N.add_beam(XY, (0,0), (2, 16), (2, -32), (8, 16), (10, 16), (10, 0), (12,0))
 #N.flip_sign(XY)
-N.plot()
+#N.plot()
 

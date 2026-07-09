@@ -251,7 +251,7 @@ class Structure():
             ymax = max(p.y, ymax)
         return ymin, ymax
 
-def plot(structure, seed=None):
+def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True):
     plt.plot([0,0],[0,0],color='black',linewidth=2)
     axs = plt.gca()
     axs.axis('equal')
@@ -697,15 +697,15 @@ def plot(structure, seed=None):
         content_bbox = fig.get_tightbbox(renderer)
         assert content_bbox is not None
     content_bbox = content_bbox.padded(0.1)
-    if seed is not None:
-        constructiehash = hashlib.sha256(seed.encode()).hexdigest()
-        fig.savefig(constructiehash+'.svg', format='svg', bbox_inches=content_bbox)
-        #fig.savefig(constructiehash+'.svg', format='svg')
+    if name is not None:
+        if is_seed:
+            name = hashlib.sha256(name.encode()).hexdigest()
+        fig.savefig(name+'.'+format, format=format, bbox_inches=content_bbox)
+        #fig.savefig(name+'.'+format, format=format)
     plt.show()
 
 
 # TODO:
-# MVN-lijnen
 # translatieveer toevoegen
 # 3D
 # kabel, parabool toevoegen aan gewone 
