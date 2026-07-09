@@ -27,6 +27,12 @@ def resolve_force_color(color: str) -> str:
         raise ValueError("Force color must be one of: 'red', 'green', 'blue'")
     return FORCE_COLORS[color]
 
+def rotate(beam, x, y):
+    a = np.radians(beam.angle)
+    print(a)
+    return (beam.x1 + x*np.cos(a) - y*np.sin(a),
+            beam.y1 + x*np.sin(a) + y*np.cos(a))
+
 
 class Point():
     def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0):
@@ -100,12 +106,15 @@ class RotationSpring():
         self.alt_label = alternative_label
 
 class TranslationSpring():
-    def __init__(self, point: Point, value: float=None, unit:str='kN/m', angle: float=90, labelpos:tuple[str,str]=('top', 'center'),alternative_label:str=''):
-        self.x = point.x
-        self.y = point.y
+    def __init__(self, startpoint: Point, endpoint: Point, value: float=None, unit:str='kN/m', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str=''):
+        self.x1 = startpoint.x
+        self.y1 = startpoint.y
+        self.x2 = endpoint.x
+        self.y2 = endpoint.y
+        self.startpoint = startpoint
+        self.endpoint = endpoint
         self.value = value
         self.unit = unit
-        self.angle = angle
         self.labelx = labelpos[1]
         self.labely = labelpos[0]
         self.alt_label = alternative_label
@@ -229,6 +238,7 @@ class Structure():
 
     def add_translationspring(self, *translationsprings):
         for translationspring in translationsprings:
+            print(translationspring)
             self._translationsprings.add(translationspring)
 
     def add_length(self, *lengths: Length):
@@ -253,6 +263,7 @@ class Structure():
 
 def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True):
     plt.plot([0,0],[0,0],color='black',linewidth=2)
+    print(structure._translationsprings)
     axs = plt.gca()
     axs.axis('equal')
     axs.axis('off')
@@ -260,10 +271,10 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     xlength = max(1, xmax - xmin)
     ymin, ymax = structure.yminmax()
     ylength = max(1, ymax - ymin)
-    print(xmin, xmax, ymin, ymax)
+    #print(xmin, xmax, ymin, ymax)
     # scaler = (np.sqrt(xlength*ylength) - np.sqrt(3*1)) / (np.sqrt(20*6) - np.sqrt(3*1))
     scaler = (max(xlength,ylength) - max(3,1)) / (max(20,6) - max(3,1))
-    print(scaler)
+    #print(scaler)
     # scaler = 2*(xlength*ylength - 3*1) / (20*6 - 3*1)
     # plt.xlim(xmin - 2, xmax + 2)
     # plt.ylim(ymin - 2, ymax + 2)
@@ -620,7 +631,26 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         drawrotationspring(r)
 
     def drawtranslationspring(tspring):
-        ... 
+        print(tspring.x1, tspring.y1, tspring.x2, tspring.y2)
+        x1, x2 = tspring.x1, tspring.x2
+        y1, y2 = tspring.y1, tspring.y2
+        n_spikes = 10
+        length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        spike_length = length / n_spikes
+        spike_angle = np.arctan2(y2 - y1, x2 - x1)
+        print(spike_angle)
+        spike_x = np.linspace(0, length, n_spikes*2+1)
+        print(spike_x)
+        spike_y = np.linspace(0, 0, n_spikes*2+1)
+        for i in range(len(spike_x)):
+            if (i+3) % 4 == 0:
+                spike_y[i] += 2*spike_length
+            if (i+1) % 4 == 0:
+                spike_y[i] -= 2*spike_length
+        print(spike_y)
+        spike_x_rotated, spike_y_rotated = zip(*(rotate(Beam(tspring.startpoint, tspring.endpoint), xi, yi)
+                                            for xi, yi in zip(spike_x, spike_y)))
+        plt.plot(spike_x_rotated, spike_y_rotated, color='black', linewidth=1)
 
     for t in structure._translationsprings:
         drawtranslationspring(t)
@@ -700,8 +730,8 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     if name is not None:
         if is_seed:
             name = hashlib.sha256(name.encode()).hexdigest()
-        fig.savefig(name+'.'+format, format=format, bbox_inches=content_bbox)
-        #fig.savefig(name+'.'+format, format=format)
+        #fig.savefig(name+'.'+format, format=format, bbox_inches=content_bbox)
+        fig.savefig(name+'.'+format, format=format)
     plt.show()
 
 
@@ -716,18 +746,3 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
 # - Label positie automatisch vinden
 # radius
 
-
-A = Point(0,0, 'A', labelpos=('top', 'left'))
-B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
-As = Support(A, 'pinned', angle=90)
-Bs = Support(B, 'pinned', angle=90)
-AB = Beam(A, B, anglelabel=True)
-L = Length(A, B, ax='y', ypos='right')
-F = DistributedLoad(A, B, 40, 40, angle=AB.angle-90)
-st = Structure()
-st.add_beam(AB)
-st.add_support(As)
-st.add_support(Bs)
-st.add_length(L)
-st.add_distributedload(F)
-plot(st)

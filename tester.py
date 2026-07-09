@@ -1,4 +1,4 @@
-from plotter import Structure, Point, PointLoad, Beam, Moment, Length, DistributedLoad, Support, RotationSpring
+from plotter import Structure, Point, PointLoad, Beam, Moment, Length, DistributedLoad, Support, RotationSpring, TranslationSpring
 from plotter import plot
 from MVN import Mgraph, Vgraph, Ngraph
 
@@ -35,22 +35,27 @@ s.add_distributedload(q1)
 s.add_rotationspring(RS)
 s.add_length(L1)
 s.add_length(L2)
-plot(s)
+#plot(s)
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
-As = Support(A, 'pinned', angle=90)
+C = Point(-1, 0)
+D = Point(0,4)
+E = Point(-1, 4)
+Cs = Support(C, 'pinned', angle=90)
 Bs = Support(B, 'pinned', angle=90)
 AB = Beam(A, B, anglelabel=True)
+CA = TranslationSpring(C, A)
 L = Length(A, B, ax='y', ypos='right')
 F = DistributedLoad(A, B, 40, 40, angle=AB.angle-90)
 st = Structure()
 st.add_beam(AB)
-st.add_support(As)
+st.add_support(Cs)
 st.add_support(Bs)
 st.add_length(L)
 st.add_distributedload(F)
-#plot(st)
+st.add_translationspring(CA)
+plot(st)
 
 A = Point(0,0, 'A', labelpos=('top', 'right'))
 B = Point(3, A.y, 'B')
@@ -136,7 +141,7 @@ for Dy in [2,3,4]:
     s3.add_moment(M)
     s3.add_pointload(F)
     s3.add_length(Ly, Lx1, Lx2)
-    plot(s3, name=f'{Dy}', format='png', is_seed=False)
+    #plot(s3, name=f'{Dy}', format='png', is_seed=False)
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
