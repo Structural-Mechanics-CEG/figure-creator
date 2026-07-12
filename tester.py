@@ -1,6 +1,6 @@
-from plotter import Structure, Point, PointLoad, Beam, Moment, Length, DistributedLoad, Support, RotationSpring, TranslationSpring
+from plotter import Structure, Point, PointLoad, Beam, ParabolicBeam, Moment, Length, DistributedLoad, Support, RotationSpring, TranslationSpring
 from plotter import plot
-from MVN import Mgraph, Vgraph, Ngraph
+from plotter import Mgraph, Vgraph, Ngraph
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(5,A.y, 'B', labelpos=('top', 'right'))
@@ -11,7 +11,7 @@ M1 = Moment(D, -20, clock_wise=True)
 F1 = PointLoad(C, 10, dxdy=(0,2), labelpos=('top', 'right'))
 L1 = Length(A, D, 'y', ypos='left')
 L2 = Length(E, C, 'x')
-AD = Beam(A, D)
+AD = ParabolicBeam(A, -0.5, C)
 AD.add_hinge('end')
 EC = Beam(E, C)
 CB = Beam(B, C, 'EI = 2000\nA=300', labelpos=('bottom','left'), anglelabel=True)
@@ -35,7 +35,7 @@ s.add_distributedload(q1)
 s.add_rotationspring(RS)
 s.add_length(L1)
 s.add_length(L2)
-#plot(s)
+plot(s)
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(A.x+1.5,8, 'B', labelpos=('top', 'right'))
@@ -55,7 +55,7 @@ st.add_support(Bs)
 st.add_length(L)
 st.add_distributedload(F)
 st.add_translationspring(CA)
-plot(st)
+#plot(st)
 
 A = Point(0,0, 'A', labelpos=('top', 'right'))
 B = Point(3, A.y, 'B')
@@ -168,5 +168,5 @@ V.add_beam(XY, (0,0), (2, 16), (2, -32), (8, 16), (10, 16), (10, 0), (12,0))
 N = Ngraph()
 N.add_beam(XY, (0,0), (2, 16), (2, -32), (8, 16), (10, 16), (10, 0), (12,0))
 #N.flip_sign(XY)
-#N.plot()
+N.plot()
 
