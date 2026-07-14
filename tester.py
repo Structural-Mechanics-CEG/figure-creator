@@ -35,6 +35,8 @@ s.add_distributedload(q1)
 s.add_rotationspring(RS)
 s.add_length(L1)
 s.add_length(L2)
+#s.opaque_list(C, AD, EC, CB, M1, F1, q1, L1, L2, As, Bs, Es, RS)
+s.dashed_list(AD, EC, CB, C)
 plot(s)
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))

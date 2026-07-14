@@ -57,13 +57,15 @@ def parabole(x1, y1, x2, y2, x3, y3):
 
 
 class Point():
-    def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0):
+    def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0, is_opaque: bool = False, is_dashed: bool = False):
         self.x = x
         self.y = y
         self.z = z
         self.label = label
         self.labelx = labelpos[1]
         self.labely = labelpos[0]
+        self.is_opaque = is_opaque
+        self.is_dashed = is_dashed
 
     def __repr__(self):
         return f'Point {self.label}: x={self.x}, y={self.y}, z={self.z}'
@@ -74,8 +76,14 @@ class Point():
     def distance_to(self, point):
         return sqrt((self.x - point.x)**2 + (self.y - point.y)**2)
         
+    def make_opaque(self):
+        self.is_opaque = True
+
+    def make_dashed(self):
+        self.is_dashed = True
+
 class Beam():
-    def __init__(self, begin: Point, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False):
+    def __init__(self, begin: Point, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False, is_dashed:bool=False):
         self.begin = begin
         self.x1 = begin.x
         self.y1 = begin.y
@@ -87,6 +95,8 @@ class Beam():
         self.labely = labelpos[0]
         self.anglelabel =anglelabel
         self.labelflip = anglelabelflip
+        self.is_opaque = is_opaque
+        self.is_dashed = is_dashed
         self.hinges = []
         
     @property
@@ -103,18 +113,25 @@ class Beam():
         else:
             self.hinges.append((self.end, False))
 
+    def make_opaque(self):
+        self.is_opaque = True
+
+    def make_dashed(self):
+        self.is_dashed = True
+
 class ParabolicBeam(Beam):
-    def __init__(self, begin: Point, mid_deflection: float, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False):
-        super().__init__(begin, end, label, labelpos, anglelabel, anglelabelflip)
+    def __init__(self, begin: Point, mid_deflection: float, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False):
+        super().__init__(begin, end, label, labelpos, anglelabel, anglelabelflip, is_opaque)
         self.ym = mid_deflection
 
 class Support():
-    def __init__(self, point: Point, support_type: str = 'fixed', angle: float = 0.0):
+    def __init__(self, point: Point, support_type: str = 'fixed', angle: float = 0.0, is_opaque: bool = False):
         self.loc = point
         self.x = point.x
         self.y = point.y
         self.set_type(support_type)
         self.angle = angle
+        self.is_opaque = is_opaque
 
     def set_type(self, support_type):
         if support_type not in ['fixed', 'roller', 'pinned']:
@@ -122,8 +139,11 @@ class Support():
         else:
             self._type = support_type
 
+    def make_opaque(self):
+        self.is_opaque = True
+
 class RotationSpring():
-    def __init__(self, point: Point, value: float=None, unit:str='kNm/rad', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str=''):
+    def __init__(self, point: Point, value: float=None, unit:str='kNm/rad', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str='', is_opaque: bool = False):
         self.x = point.x
         self.y = point.y
         self.value = value
@@ -131,9 +151,13 @@ class RotationSpring():
         self.labelx = labelpos[1]
         self.labely = labelpos[0]
         self.alt_label = alternative_label
+        self.is_opaque = is_opaque
+
+    def make_opaque(self):
+        self.is_opaque = True
 
 class TranslationSpring():
-    def __init__(self, startpoint: Point, endpoint: Point, value: float=None, unit:str='kN/m', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str=''):
+    def __init__(self, startpoint: Point, endpoint: Point, value: float=None, unit:str='kN/m', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str='', is_opaque: bool = False):
         self.x1 = startpoint.x
         self.y1 = startpoint.y
         self.x2 = endpoint.x
@@ -145,9 +169,13 @@ class TranslationSpring():
         self.labelx = labelpos[1]
         self.labely = labelpos[0]
         self.alt_label = alternative_label
+        self.is_opaque = is_opaque
+
+    def make_opaque(self):
+        self.is_opaque = True
 
 class PointLoad():
-    def __init__(self, point: Point, value: float, unit: str = 'kN', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red'):
+    def __init__(self, point: Point, value: float, unit: str = 'kN', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False):
         self.value = value
         self.dx = dxdy[0]
         self.dy = dxdy[1]
@@ -160,9 +188,13 @@ class PointLoad():
         self.labelflip = anglelabelflip
         self.alt_label = alternative_label
         self.color = resolve_force_color(color)
+        self.is_opaque = is_opaque
 
+    def make_opaque(self):
+        self.is_opaque = True
+        
 class DistributedLoad():
-    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red'):
+    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red', is_opaque: bool = False):
         self.begin_value = begin_value
         self.end_value = end_value if end_value is not None else begin_value
         self.unit = unit
@@ -181,9 +213,13 @@ class DistributedLoad():
         self.alt_label_begin = alternative_label_begin
         self.alt_label_end = alternative_label_end
         self.color = resolve_force_color(color)
+        self.is_opaque = is_opaque
+
+    def make_opaque(self):
+        self.is_opaque = True
 
 class Moment():
-    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red'):
+    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False):
         if value is not None and value < 0:
             self.value = -value
             self.clock_wise = not clock_wise
@@ -197,15 +233,23 @@ class Moment():
         self.labely = labelpos[0]
         self.alt_label = alternative_label
         self.color = resolve_force_color(color)
+        self.is_opaque = is_opaque
+
+    def make_opaque(self):
+        self.is_opaque = True
 
 class Length():
-    def __init__(self, point1: Point, point2: Point, ax: str='x', xpos: str = 'bottom', ypos: str ='left', alternative_label:str = None):
+    def __init__(self, point1: Point, point2: Point, ax: str='x', xpos: str = 'bottom', ypos: str ='left', alternative_label:str = None, is_opaque: bool = False):
         self.point1 = point1
         self.point2 = point2
         self.pos = ax
         self.xpos = xpos
         self.ypos = ypos
-        self.altlabel =alternative_label
+        self.altlabel = alternative_label
+        self.is_opaque = is_opaque
+
+    def make_opaque(self):
+        self.is_opaque = True
 
 class Structure():
     def __init__(self):
@@ -287,6 +331,14 @@ class Structure():
             ymin = min(p.y, ymin)
             ymax = max(p.y, ymax)
         return ymin, ymax
+    
+    def opaque_list(self, *args):
+        for arg in args:
+            arg.make_opaque()
+
+    def dashed_list(self, *args):
+        for arg in args:
+            arg.make_dashed()
 
 def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True):
     plt.plot([0,0],[0,0],color='black',linewidth=2)
@@ -308,6 +360,9 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     #axs.margins(0.2)
     
     def drawbeam(beam: Beam):
+        alpha = 1.0 if not beam.is_opaque else 0.5
+        linestyle = (5, (8, 3)) if beam.is_dashed else 'solid'
+        linewidth = 1 if beam.is_dashed else 2
         if isinstance(beam, ParabolicBeam):
             # calculate the rotated coordinates of the start, middle and end points of the parabolic beam
             x1_r, y1_r = 0, 0
@@ -315,9 +370,9 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             xm_r, ym_r = 0.5*beam.length , beam.ym
             xylist = parabole(x1_r, y1_r, xm_r, ym_r, x2_r, y2_r)
             xy_list_rotated = [rotate_point(beam, x, y) for x, y in xylist]
-            plt.plot([x for x, y in xy_list_rotated], [y for x, y in xy_list_rotated], color='black', linewidth=2)
+            plt.plot([x for x, y in xy_list_rotated], [y for x, y in xy_list_rotated], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
         else:
-            plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=2)
+            plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
         amin = 0.05
         amax = 0.4
         a = amin + scaler * (amax - amin)
@@ -325,7 +380,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         rmax = 0.6*0.3
         r = rmin + scaler * (rmax - rmin)
         for hinge, is_begin in beam.hinges:
-            h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=2)
+            h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=linewidth, alpha=alpha, linestyle=linestyle)
             axs.add_patch(h)
 
         midx = (beam.x1+beam.x2)/2
@@ -348,7 +403,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
                 y += l
             if beam.labely == 'bottom':
                 y -= l
-            axs.annotate(text=beam.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=beam.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
             
         if beam.anglelabel:
             dx1 = (1 - 2*int(beam.labelflip)) * (beam.x2 - beam.x1) / 4
@@ -358,17 +413,18 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             gcd = np.gcd(dx, dy)
             dx = int(dx/gcd)
             dy = int(dy/gcd)
-            plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black")
+            plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black", alpha=alpha)
             umin = 0.2
             umax = 0.6
             u = umin + scaler*(umax-umin)
-            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman')
-            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman')
+            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
+            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
 
     for b in structure._beams:
         drawbeam(b)
 
     def drawpoint(point: Point):
+        alpha = 1.0 if not point.is_opaque else 0.5
         lmin = 0.2
         lmax = 0.5
         l = lmin + scaler * (lmax - lmin)
@@ -384,27 +440,31 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         if point.labely == 'bottom':
             y -= l 
 
-        axs.annotate(text=point.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
+        axs.annotate(text=point.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
     for p in structure._points:
         drawpoint(p)
 
     def drawhinge(hinge):
+        alpha = 0.5 if hinge.is_opaque else 1.0
+        linestyle = 'solid' if not hinge.is_dashed else (0, (4, 2))
+        linewidth = 2 if hinge.is_dashed else 1
         rmin = 0.15
         rmax = 0.6
         r = rmin + scaler*(rmax-rmin)
-        h = Circle([hinge.x,hinge.y], radius=r*0.3, facecolor='white',edgecolor='black', zorder=2)
+        h = Circle([hinge.x,hinge.y], radius=r*0.3, facecolor='white',edgecolor='black', zorder=linewidth, alpha=alpha, linestyle=linestyle)
         axs.add_patch(h)
 
     for h in structure._hinges:
         drawhinge(h)
 
     def drawmoment(moment: Moment):
+        alpha = 1.0 if not moment.is_opaque else 0.5
         angle = moment.angle
         rmin = 0.5
         rmax = 2.5
         radius = rmin + scaler * (rmax - rmin)
-        m = Arc((moment.point.x, moment.point.y), width=radius, height = radius, angle=angle, theta1=0, theta2=150, color=moment.color, alpha=1, linewidth=2)
+        m = Arc((moment.point.x, moment.point.y), width=radius, height = radius, angle=angle, theta1=0, theta2=150, color=moment.color, alpha=alpha, linewidth=2)
         axs.add_patch(m)
         
         arrowhead = FancyArrow(
@@ -416,7 +476,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
                     head_width=0.1*radius/rmin,
                     head_length=0.15*radius/rmin,
                     color=moment.color,
-                    alpha=1.0,
+                    alpha=alpha,
                     length_includes_head=True
                 )
         axs.add_patch(arrowhead)
@@ -436,14 +496,15 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             y -= 0.5*radius + u 
         
         if moment.alt_label is not None:
-            axs.annotate(text=moment.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=moment.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         elif moment.value is not None:
-            axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=str(moment.value) + ' ' + moment.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
     for h in structure._moments:
         drawmoment(h)
 
     def drawpointload(pointload: PointLoad):
+        alpha = 1.0 if not pointload.is_opaque else 0.5
         lmin = 0.8
         lmax = 2.5
         length = lmin + scaler*(lmax-lmin) # afhankelijk van andere pointloads en totale grootte van de structure
@@ -454,7 +515,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         ddy = pointload.dy * length / np.sqrt(pointload.dx**2 + pointload.dy**2)
         start = (pointload.x + ddx, pointload.y + ddy) # depends on angle and wanted length
 
-        axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=pointload.color))
+        axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=pointload.color, alpha=alpha))
 
         umin = 0.1
         umax = 0.1
@@ -471,10 +532,10 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         if pointload.labely == 'bottom':
             y -= u * length 
         if pointload.value is not None:
-            axs.annotate(text=str(pointload.value) + ' ' + pointload.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=str(pointload.value) + ' ' + pointload.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         else:
-            axs.annotate(text=pointload.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman')
-    
+            axs.annotate(text=pointload.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+
         if pointload.anglelabel: 
             dx1 = (1 - 2*int(pointload.labelflip)) * ddx/3
             dy1 = (1 - 2*int(pointload.labelflip)) * ddy/3
@@ -489,14 +550,15 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             umax = 0.6
             u = umin + scaler*(umax-umin)
             plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black")
-            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman')
-            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman')
+            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
+            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
 
     for p in structure._pointloads:
         print(p)
         drawpointload(p)
 
     def drawdistributedload(dload: DistributedLoad):
+        alpha = 1.0 if not dload.is_opaque else 0.5
         lmin = 0.6
         lmax = 2.5
         length_mid = lmin + scaler * (lmax - lmin)
@@ -509,7 +571,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         # plot line
         plt.plot([dload.begin.x + 0.95 * length[0] * np.cos(np.radians(dload.angle)), dload.end.x + 0.95 * length[-1] * np.cos(np.radians(dload.angle))], 
                  [dload.begin.y + 0.95 * length[0] * np.sin(np.radians(dload.angle)), dload.end.y + 0.95 * length[-1] * np.sin(np.radians(dload.angle))], 
-                 color=dload.color, linewidth=2)
+                 color=dload.color, linewidth=2, alpha=alpha)
         # plot arrows
         for i in range(n_arrow):
             tip = (dload.begin.x + i * dist * np.cos(np.radians(beam_angle)), 
@@ -517,7 +579,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             start = (dload.begin.x + i * dist * np.cos(np.radians(beam_angle)) + length[i] * np.cos(np.radians(dload.angle)), 
                      dload.begin.y + i * dist * np.sin(np.radians(beam_angle)) + length[i] * np.sin(np.radians(dload.angle)))
             if np.sqrt((tip[0]-start[0])**2+(tip[1]-start[1])**2) > 0.1:
-                axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=dload.color))
+                axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=dload.color, alpha=alpha))
 
         # display text at begin point
         x = dload.begin.x + length[0] * np.cos(np.radians(dload.angle))       
@@ -533,9 +595,9 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             y -= 0.2 * length_mid 
         
         if dload.alt_label_begin is None:
-            axs.annotate(text=str(dload.begin_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=str(dload.begin_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         else:
-            axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
         # display text at end point
         x = dload.end.x + length[-1] * np.cos(np.radians(dload.angle))       
@@ -551,14 +613,15 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             y -= 0.2 * length_mid 
         
         if dload.alt_label_end is None:
-            axs.annotate(text=str(dload.end_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=str(dload.end_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         else:
-            axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center', fontname='Times New Roman')
+            axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
     for d in structure._distributedloads:
         drawdistributedload(d)
 
     def drawfixedsupport(support: Support):
+        alpha = 1.0 if not support.is_opaque else 0.5
         angle = support.angle
         #angle = 30
         amin = 0.2
@@ -587,7 +650,8 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
                     support.y - 0.5*(new_height + a*np.cos(np.radians(angle))), 
                     support.y + 0.5*(new_height - a*np.cos(np.radians(angle)))], 
                    aspect='equal', 
-                   origin='lower')
+                   origin='lower',
+                   alpha=alpha)
         #axs.set_xlim(xmin - 2, xmax + 2)
         #axs.set_ylim(ymin - 2, ymax + 2)
         #axs.margins(0.2)
@@ -596,12 +660,13 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
                 support.x + a*np.cos(np.radians(angle))], 
                 [support.y - a*np.sin(np.radians(angle)), 
                 support.y + a*np.sin(np.radians(angle))], 
-                color='black', linewidth=2)
+                color='black', linewidth=2, alpha=alpha)
         
     for f in structure._fixedsupports:
         drawfixedsupport(f)
 
     def drawrollersupport(support: Support):
+        alpha = 1.0 if not support.is_opaque else 0.5
         basetriangle = np.array([[0,0], [-0.67, -1], [0.67, -1], [0,0]])
         baseline1 = np.array([[-1, -1], [1, -1]])
         baseline2 = np.array([[-1, -1.2], [1, -1.2]])
@@ -622,9 +687,9 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         shiftedline1 = rotatedline1 + (support.x,support.y)
         shiftedline2 = rotatedline2 + (support.x,support.y)
         # make patches and add them
-        triangle = Polygon(shiftedtriangle, facecolor = '#00CC99',edgecolor='black')
-        line1 = Polygon(shiftedline1, fill=False, edgecolor='black', linewidth=1)
-        line2 = Polygon(shiftedline2, fill=False, edgecolor='black', linewidth=1)
+        triangle = Polygon(shiftedtriangle, facecolor = '#00CC99',edgecolor='black', alpha=alpha)
+        line1 = Polygon(shiftedline1, fill=False, edgecolor='black', linewidth=1, alpha=alpha)
+        line2 = Polygon(shiftedline2, fill=False, edgecolor='black', linewidth=1, alpha=alpha)
         axs.add_patch(triangle)
         axs.add_patch(line1)
         axs.add_patch(line2)
@@ -633,6 +698,7 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         drawrollersupport(r) 
 
     def drawpinnedsupport(support: Support):
+        alpha = 1.0 if not support.is_opaque else 0.5
         basetriangle = np.array([[0,0], [-0.67, -1], [0.67, -1], [0,0]])
         baseline1 = np.array([[-1, -1], [1, -1]])
         # scaling
@@ -649,8 +715,8 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         shiftedtriangle = rotatedtriangle + (support.x,support.y) # move to wanted point
         shiftedline1 = rotatedline1 + (support.x,support.y)
         # make patches and add them
-        triangle = Polygon(shiftedtriangle, facecolor = '#00CC99',edgecolor='black')
-        line1 = Polygon(shiftedline1, fill=False, edgecolor='black', linewidth=1)
+        triangle = Polygon(shiftedtriangle, facecolor = '#00CC99',edgecolor='black', alpha=alpha)
+        line1 = Polygon(shiftedline1, fill=False, edgecolor='black', linewidth=1, alpha=alpha)
         axs.add_patch(triangle)
         axs.add_patch(line1)
 
@@ -658,28 +724,27 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         drawpinnedsupport(p)
 
     def drawrotationspring(rspring):
+        alpha = 1.0 if not rspring.is_opaque else 0.5
         theta = np.radians(np.linspace(2,360*2,1000))
         rmin = 0.025
         rmax = 0.08
         r = theta**0.7 * (rmin + scaler * (rmax-rmin) )
         x_2 = r*np.cos(theta) + rspring.x
         y_2 = r*np.sin(theta) + rspring.y
-        plt.plot(x_2,y_2, color='black', linewidth=1)
+        plt.plot(x_2,y_2, color='black', linewidth=1, alpha=alpha)
 
     for r in structure._rotationsprings:
         drawrotationspring(r)
 
     def drawtranslationspring(tspring):
-        print(tspring.x1, tspring.y1, tspring.x2, tspring.y2)
+        alpha = 1.0 if not tspring.is_opaque else 0.5
         x1, x2 = tspring.x1, tspring.x2
         y1, y2 = tspring.y1, tspring.y2
         n_spikes = 10
         length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
         spike_length = length / n_spikes
         spike_angle = np.arctan2(y2 - y1, x2 - x1)
-        print(spike_angle)
         spike_x = np.linspace(0, length, n_spikes*2+1)
-        print(spike_x)
         spike_y = np.linspace(0, 0, n_spikes*2+1)
         for i in range(len(spike_x)):
             if (i+3) % 4 == 0:
@@ -689,12 +754,13 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         print(spike_y)
         spike_x_rotated, spike_y_rotated = zip(*(rotate_point(Beam(tspring.startpoint, tspring.endpoint), xi, yi)
                                             for xi, yi in zip(spike_x, spike_y)))
-        plt.plot(spike_x_rotated, spike_y_rotated, color='black', linewidth=1)
+        plt.plot(spike_x_rotated, spike_y_rotated, color='black', linewidth=1, alpha=alpha)
 
     for t in structure._translationsprings:
         drawtranslationspring(t)
     
     def drawlength(length: Length):
+        alpha = 1.0 if not length.is_opaque else 0.5
         if length.pos == 'x':
             x1 = length.point1.x
             x2 = length.point2.x
@@ -706,11 +772,11 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             else:
                 y = ymax + uy
             text = str(round(abs(x2 - x1), 1)) + ' m' if length.altlabel is None else length.altlabel
-            axs.annotate(text='', xy=(x1,y), xytext=(x2,y), arrowprops=dict(arrowstyle='<->',shrinkA=0,shrinkB=0))
+            axs.annotate(text='', xy=(x1,y), xytext=(x2,y), arrowprops=dict(arrowstyle='<->',shrinkA=0,shrinkB=0, alpha=alpha))
             umin = 0.2
             umax = 1
             u = umin +scaler*(umax-umin)
-            axs.annotate(text=text,xy=((x2+x1)/2,y+u),ha='center',va='top', fontname='Times New Roman')
+            axs.annotate(text=text,xy=((x2+x1)/2,y+u),ha='center',va='top', fontname='Times New Roman', alpha=alpha)
         else:
             y1 = length.point1.y
             y2 = length.point2.y
@@ -722,11 +788,11 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
             else:
                 x = xmax + ux
             text = str(round(abs(y2 - y1), 1)) + ' m' if length.altlabel is None else length.altlabel
-            axs.annotate(text='', xy=(x,y1), xytext=(x,y2), arrowprops=dict(arrowstyle='<->',shrinkA=0,shrinkB=0))
+            axs.annotate(text='', xy=(x,y1), xytext=(x,y2), arrowprops=dict(arrowstyle='<->',shrinkA=0,shrinkB=0, alpha=alpha))
             umin = 0.3
             umax = 1
             u = umin +scaler*(umax-umin)
-            axs.annotate(text=text,xy=(x+u, (y2+y1)/2),ha='center',va='center', fontname='Times New Roman')
+            axs.annotate(text=text,xy=(x+u, (y2+y1)/2),ha='center',va='center', fontname='Times New Roman', alpha=alpha)
 
     for l in structure._lengths:
         drawlength(l)
@@ -971,8 +1037,7 @@ class Ngraph(MVNgraph):
                 plt.plot(x_sign_rotated, y_sign_rotated, linewidth=1.5, color='black')
 
 # TODO:
-# 3D
-# kabel, parabool toevoegen aan gewone 
+# 3D 
 # doorsnede plot
 
 ## Later:
