@@ -1,6 +1,7 @@
 from math import sqrt, degrees
 import numpy as np
 import matplotlib.pyplot as plt
+import sympy
 plt.rcParams.update({
     'font.family': 'serif',
     'font.serif': ['Times New Roman'],
@@ -123,6 +124,12 @@ class ParabolicBeam(Beam):
     def __init__(self, begin: Point, mid_deflection: float, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False):
         super().__init__(begin, end, label, labelpos, anglelabel, anglelabelflip, is_opaque)
         self.ym = mid_deflection
+
+class DeformedBeam(Beam):
+    def __init__(self, begin: Point, end: Point, variable=sympy.symbols('x'), expression=0, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False):
+        super().__init__(begin, end, label, labelpos, anglelabel, anglelabelflip, is_opaque)
+        self.function = sympy.lambdify(variable, expression)
+
 
 class Support():
     def __init__(self, point: Point, support_type: str = 'fixed', angle: float = 0.0, is_opaque: bool = False):
@@ -281,6 +288,12 @@ class Structure():
             self.add_point(beam.begin)
             self.add_point(beam.end)
 
+    def add_deformedbeam(self, *deformedbeams):
+        for deformedbeam in deformedbeams:
+            self._deformedbeams.add(deformedbeam)
+            self.add_point(deformedbeam.begin)
+            self.add_point(deformedbeam.end)
+
     def add_support(self, *supports):
         for support in supports:
             self.add_point(support.loc)
@@ -358,67 +371,86 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     # plt.xlim(xmin - 2, xmax + 2)
     # plt.ylim(ymin - 2, ymax + 2)
     #axs.margins(0.2)
-    
+
+    def drawdeformedbeam(deformedbeam: DeformedBeam):
+        alpha = 1.0 if not deformedbeam.is_opaque else 0.5
+        linestyle = (5, (8, 3)) if deformedbeam.is_dashed else 'solid'
+        linewidth = 1 if deformedbeam.is_dashed else 2
+        x1, y1 = deformedbeam.begin.x, deformedbeam.begin.y
+        x2, y2 = deformedbeam.end.x, deformedbeam.end.y
+        a = np.linspace(0, deformedbeam.length, 1000) # Replace with your desired range and number of points
+        print(a)
+        f = deformedbeam.function
+        y_beam = np.full_like(a, f(a))
+        print(y_beam)
+        beam = Beam(deformedbeam.begin, deformedbeam.end)
+        xy_list = [rotate_point(beam, xi, yi) for xi, yi in zip(a, y_beam)]
+        print(xy_list)
+        plt.plot([x for x, y in xy_list], [y for x, y in xy_list], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
+
     def drawbeam(beam: Beam):
-        alpha = 1.0 if not beam.is_opaque else 0.5
-        linestyle = (5, (8, 3)) if beam.is_dashed else 'solid'
-        linewidth = 1 if beam.is_dashed else 2
-        if isinstance(beam, ParabolicBeam):
-            # calculate the rotated coordinates of the start, middle and end points of the parabolic beam
-            x1_r, y1_r = 0, 0
-            x2_r, y2_r = beam.length, 0
-            xm_r, ym_r = 0.5*beam.length , beam.ym
-            xylist = parabole(x1_r, y1_r, xm_r, ym_r, x2_r, y2_r)
-            xy_list_rotated = [rotate_point(beam, x, y) for x, y in xylist]
-            plt.plot([x for x, y in xy_list_rotated], [y for x, y in xy_list_rotated], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
+        if isinstance(beam, DeformedBeam):
+            drawdeformedbeam(beam)
         else:
-            plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
-        amin = 0.05
-        amax = 0.4
-        a = amin + scaler * (amax - amin)
-        rmin = 0.15*0.3
-        rmax = 0.6*0.3
-        r = rmin + scaler * (rmax - rmin)
-        for hinge, is_begin in beam.hinges:
-            h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=linewidth, alpha=alpha, linestyle=linestyle)
-            axs.add_patch(h)
+            alpha = 1.0 if not beam.is_opaque else 0.5
+            linestyle = (5, (8, 3)) if beam.is_dashed else 'solid'
+            linewidth = 1 if beam.is_dashed else 2
+            if isinstance(beam, ParabolicBeam):
+                # calculate the rotated coordinates of the start, middle and end points of the parabolic beam
+                x1_r, y1_r = 0, 0
+                x2_r, y2_r = beam.length, 0
+                xm_r, ym_r = 0.5*beam.length , beam.ym
+                xylist = parabole(x1_r, y1_r, xm_r, ym_r, x2_r, y2_r)
+                xy_list_rotated = [rotate_point(beam, x, y) for x, y in xylist]
+                plt.plot([x for x, y in xy_list_rotated], [y for x, y in xy_list_rotated], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
+            else:
+                plt.plot([beam.x1, beam.x2], [beam.y1, beam.y2], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
+            amin = 0.05
+            amax = 0.4
+            a = amin + scaler * (amax - amin)
+            rmin = 0.15*0.3
+            rmax = 0.6*0.3
+            r = rmin + scaler * (rmax - rmin)
+            for hinge, is_begin in beam.hinges:
+                h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=linewidth, alpha=alpha, linestyle=linestyle)
+                axs.add_patch(h)
 
-        midx = (beam.x1+beam.x2)/2
-        midy = (beam.y1+beam.y2)/2
-        if isinstance(beam, ParabolicBeam):
-            midx, midy = xy_list_rotated[1]
+            midx = (beam.x1+beam.x2)/2
+            midy = (beam.y1+beam.y2)/2
+            if isinstance(beam, ParabolicBeam):
+                midx, midy = xy_list_rotated[1]
 
-        lmin = 0.5
-        lmax = 0.5
-        l = lmin + scaler * (lmax - lmin)
-        if beam.label is not None:
-            x = midx
-            if beam.labelx == 'left':
-                x -= l
-            if beam.labelx == 'right':
-                x += l
+            lmin = 0.5
+            lmax = 0.5
+            l = lmin + scaler * (lmax - lmin)
+            if beam.label is not None:
+                x = midx
+                if beam.labelx == 'left':
+                    x -= l
+                if beam.labelx == 'right':
+                    x += l
 
-            y = midy
-            if beam.labely == 'top':
-                y += l
-            if beam.labely == 'bottom':
-                y -= l
-            axs.annotate(text=beam.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
-            
-        if beam.anglelabel:
-            dx1 = (1 - 2*int(beam.labelflip)) * (beam.x2 - beam.x1) / 4
-            dy1 = (1 - 2*int(beam.labelflip)) * (beam.y2 - beam.y1) / 4
-            dx = int(abs(beam.x2 - beam.x1)*100) 
-            dy = int(abs(beam.y2 - beam.y1)*100) 
-            gcd = np.gcd(dx, dy)
-            dx = int(dx/gcd)
-            dy = int(dy/gcd)
-            plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black", alpha=alpha)
-            umin = 0.2
-            umax = 0.6
-            u = umin + scaler*(umax-umin)
-            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
-            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
+                y = midy
+                if beam.labely == 'top':
+                    y += l
+                if beam.labely == 'bottom':
+                    y -= l
+                axs.annotate(text=beam.label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+                
+            if beam.anglelabel:
+                dx1 = (1 - 2*int(beam.labelflip)) * (beam.x2 - beam.x1) / 4
+                dy1 = (1 - 2*int(beam.labelflip)) * (beam.y2 - beam.y1) / 4
+                dx = int(abs(beam.x2 - beam.x1)*100) 
+                dy = int(abs(beam.y2 - beam.y1)*100) 
+                gcd = np.gcd(dx, dy)
+                dx = int(dx/gcd)
+                dy = int(dy/gcd)
+                plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black", alpha=alpha)
+                umin = 0.2
+                umax = 0.6
+                u = umin + scaler*(umax-umin)
+                axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
+                axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
 
     for b in structure._beams:
         drawbeam(b)

@@ -1,6 +1,7 @@
-from plotter import Structure, Point, PointLoad, Beam, ParabolicBeam, Moment, Length, DistributedLoad, Support, RotationSpring, TranslationSpring
+from plotter import Structure, Point, PointLoad, Beam, ParabolicBeam, DeformedBeam, Moment, Length, DistributedLoad, Support, RotationSpring, TranslationSpring
 from plotter import plot
 from plotter import Mgraph, Vgraph, Ngraph
+import sympy
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
 B = Point(5,A.y, 'B', labelpos=('top', 'right'))
@@ -11,7 +12,8 @@ M1 = Moment(D, -20, clock_wise=True)
 F1 = PointLoad(C, 10, dxdy=(0,2), labelpos=('top', 'right'))
 L1 = Length(A, D, 'y', ypos='left')
 L2 = Length(E, C, 'x')
-AD = ParabolicBeam(A, -0.5, C)
+x = sympy.symbols('x')
+AD = DeformedBeam(A, C, x, -0.2*(1*x**2 - 5.385*x))
 AD.add_hinge('end')
 EC = Beam(E, C)
 CB = Beam(B, C, 'EI = 2000\nA=300', labelpos=('bottom','left'), anglelabel=True)
@@ -36,7 +38,7 @@ s.add_rotationspring(RS)
 s.add_length(L1)
 s.add_length(L2)
 #s.opaque_list(C, AD, EC, CB, M1, F1, q1, L1, L2, As, Bs, Es, RS)
-s.dashed_list(AD, EC, CB, C)
+s.dashed_list(AD)
 plot(s)
 
 A = Point(0,0, 'A', labelpos=('top', 'left'))
