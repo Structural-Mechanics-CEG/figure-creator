@@ -7,7 +7,7 @@ plt.rcParams.update({
     'font.serif': ['Times New Roman'],
     'font.size': 12,
 })
-from matplotlib.patches import Arc, Polygon, Circle, FancyArrow
+from matplotlib.patches import Arc, FancyArrowPatch, Polygon, Circle, FancyArrow
 import matplotlib.ticker as plticker
 from matplotlib.figure import Figure
 from matplotlib.transforms import Bbox
@@ -236,6 +236,23 @@ class Moment():
     def make_opaque(self) -> None:
         self.is_opaque = True
 
+class TwistingMoment(PointLoad):
+    """TwistingMoment class represents a twisting moment in 2D space defined by its location and properties."""
+    def __init__(self, point: Point, value: float, unit: str = 'kNm', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False) -> None:
+        self.value = value
+        self.dx = dxdy[0]
+        self.dy = dxdy[1]
+        self.unit = unit
+        self.x = point.x
+        self.y = point.y
+        self.anglelabel = anglelabel
+        self.labelx = labelpos[1]
+        self.labely = labelpos[0]
+        self.labelflip = anglelabelflip
+        self.alt_label = alternative_label
+        self.color = resolve_force_color(color)
+        self.is_opaque = is_opaque
+
 class Length():
     """Length class represents a length in 2D space defined by its location and properties."""
     def __init__(self, point1: Point, point2: Point, ax: str='x', xpos: str = 'bottom', ypos: str ='left', alternative_label:str = None, is_opaque: bool = False) -> None:
@@ -278,7 +295,6 @@ def rotate_point(beam: Beam, x: float, y: float) -> tuple[float, float]:
         tuple[float, float]: The coordinates of the rotated point.
     """
     a = np.radians(beam.angle)
-    print(a)
     return (beam.x1 + x*np.cos(a) - y*np.sin(a),
             beam.y1 + x*np.sin(a) + y*np.cos(a))
 
@@ -294,7 +310,6 @@ def rotate_point_reverse(beam: Beam, x: float, y: float) -> tuple[float, float]:
         tuple[float, float]: The coordinates of the rotated point.
     """
     a = np.radians(beam.angle)
-    print(a)
     return (beam.x1 - x*np.cos(a) + y*np.sin(a),
             beam.y1 - x*np.sin(a) - y*np.cos(a))
 
@@ -319,7 +334,6 @@ def parabole(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float) -
                    [y2],
                    [y3]])
     a, b, c = np.linalg.solve(A,b_)
-    print(a, b, c)
     parlist = []
     for x in np.linspace(x1, x3, 100):
         y = a*x**2 + b*x + c
@@ -334,6 +348,7 @@ class Structure():
         self._beams = set()
         self._pointloads = set()
         self._moments = set()
+        self._twistingmoments = set()
         self._distributedloads = set()
         self._hinges = set()
         self._fixedsupports = set()
@@ -382,6 +397,10 @@ class Structure():
         for moment in moments:
             self._moments.add(moment)
 
+    def add_twistingmoment(self, *twistingmoments: TwistingMoment) -> None:
+        for twistingmoment in twistingmoments:
+            self._twistingmoments.add(twistingmoment)
+
     def add_distributedload(self, *distributedloads: DistributedLoad) -> None:
         for distributedload in distributedloads:
             self._distributedloads.add(distributedload)
@@ -392,7 +411,6 @@ class Structure():
 
     def add_translationspring(self, *translationsprings: TranslationSpring) -> None:
         for translationspring in translationsprings:
-            print(translationspring)
             self._translationsprings.add(translationspring)
 
     def add_length(self, *lengths: Length) -> None:
@@ -438,7 +456,6 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         None
     """
     plt.plot([0,0],[0,0],color='black',linewidth=2)
-    print(structure._translationsprings)
     axs = plt.gca()
     axs.axis('equal')
     axs.axis('off')
@@ -467,13 +484,10 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         x1, y1 = deformedbeam.begin.x, deformedbeam.begin.y
         x2, y2 = deformedbeam.end.x, deformedbeam.end.y
         a = np.linspace(0, deformedbeam.length, 1000) # Replace with your desired range and number of points
-        print(a)
         f = deformedbeam.function
         y_beam = np.full_like(a, f(a))
-        print(y_beam)
         beam = Beam(deformedbeam.begin, deformedbeam.end)
         xy_list = [rotate_point(beam, xi, yi) for xi, yi in zip(a, y_beam)]
-        print(xy_list)
         plt.plot([x for x, y in xy_list], [y for x, y in xy_list], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
 
     def drawbeam(beam: Beam) -> None:
@@ -606,19 +620,19 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         radius = rmin + scaler * (rmax - rmin)
         m = Arc((moment.point.x, moment.point.y), width=radius, height = radius, angle=angle, theta1=0, theta2=150, color=moment.color, alpha=alpha, linewidth=2)
         axs.add_patch(m)
-        
+            
         arrowhead = FancyArrow(
-                    moment.point.x + radius * 0.5 * np.cos(np.radians(1*(angle + 10+(1-int(moment.clock_wise))*150))),
-                    moment.point.y + radius * 0.5 * np.sin(np.radians(1*(angle + 10+(1-int(moment.clock_wise))*150))),
-                    (2*int(moment.clock_wise)-1)* 0.1 * np.cos(np.radians(angle + 10 + (1-int(moment.clock_wise))*150 - 90)), #moet groter worden met de radius
-                    (2*int(moment.clock_wise)-1)* 0.1 * np.sin(np.radians(angle + 10 + (1-int(moment.clock_wise))*150 - 90)),
-                    width=0.02*radius/rmin,
-                    head_width=0.1*radius/rmin,
-                    head_length=0.15*radius/rmin,
-                    color=moment.color,
-                    alpha=alpha,
-                    length_includes_head=True
-                )
+                        moment.point.x + radius * 0.5 * np.cos(np.radians(1*(angle + 10+(1-int(moment.clock_wise))*150))),
+                        moment.point.y + radius * 0.5 * np.sin(np.radians(1*(angle + 10+(1-int(moment.clock_wise))*150))),
+                        (2*int(moment.clock_wise)-1)* 0.1 * np.cos(np.radians(angle + 10 + (1-int(moment.clock_wise))*150 - 90)), #moet groter worden met de radius
+                        (2*int(moment.clock_wise)-1)* 0.1 * np.sin(np.radians(angle + 10 + (1-int(moment.clock_wise))*150 - 90)),
+                        width=0.02*radius/rmin,
+                        head_width=0.1*radius/rmin,
+                        head_length=0.15*radius/rmin,
+                        color=moment.color,
+                        alpha=alpha,
+                        length_includes_head=True
+                    )
         axs.add_patch(arrowhead)
         umin = 0.2
         umax = 0.6
@@ -634,7 +648,7 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             y += 0.5*radius + u
         if moment.labely == 'bottom':
             y -= 0.5*radius + u 
-        
+            
         if moment.alt_label is not None:
             axs.annotate(text=moment.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         elif moment.value is not None:
@@ -642,6 +656,134 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
 
     for h in structure._moments:
         drawmoment(h)
+
+    def drawtwistingmoment(twistingmoment: TwistingMoment) -> None:
+        """draws a twisting moment on the plot using matplotlib
+
+        Args:
+            twistingmoment (TwistingMoment): The twisting moment to draw, represented as a TwistingMoment object with properties such as point, value, unit, angle, and color.
+        """
+        alpha = 1.0 if not twistingmoment.is_opaque else 0.5
+        lmin = 0.8
+        lmax = 2.5
+        length = lmin + scaler*(lmax-lmin) # afhankelijk van andere pointloads en totale grootte van de structure
+        if twistingmoment.anglelabel:
+            length = 2 * length # if label is wanted, extend the arrow so there is room for the label
+        tip = (twistingmoment.x, twistingmoment.y)
+        ddx = twistingmoment.dx * length / np.sqrt(twistingmoment.dx**2 + twistingmoment.dy**2)
+        ddy = twistingmoment.dy * length / np.sqrt(twistingmoment.dx**2 + twistingmoment.dy**2)
+        head_dist = 0.15*length
+
+        norm = np.sqrt(ddx**2 + ddy**2)
+        ux = ddx / norm
+        uy = ddy / norm
+
+        second_tip = (tip[0] + head_dist * ux, tip[1] + head_dist * uy)
+        start = (twistingmoment.x + ddx, twistingmoment.y + ddy) # depends on angle and wanted length
+
+        main_arrow = FancyArrow(
+                                start[0],
+                                start[1],
+                                dx=second_tip[0] - start[0],
+                                dy=second_tip[1] - start[1],
+                                width=0.04*length,
+                                head_width=0.15*length,
+                                head_length=0.15*length,
+                                length_includes_head=True,
+                                color=twistingmoment.color,
+                                alpha=alpha,
+                            )
+
+        axs.add_patch(main_arrow)
+
+        # Direction from second_tip to tip
+        dx = tip[0] - second_tip[0]
+        dy = tip[1] - second_tip[1]
+        norm = np.sqrt(dx**2 + dy**2)
+
+        ux = dx / norm
+        uy = dy / norm
+
+        # Perpendicular direction
+        px = -uy
+        py = ux
+
+        # Triangle dimensions
+        head_length = 0.15 * length
+        head_width = 0.15 * length
+
+        # Tip point
+        tip_point = np.array(tip)
+
+        # Back of triangle
+        base_center = tip_point - head_length * np.array([ux, uy])
+
+        # Two base corners
+        left = base_center + (head_width / 2) * np.array([px, py])
+        right = base_center - (head_width / 2) * np.array([px, py])
+
+        triangle = Polygon(
+            [tip_point, left, right],
+            closed=True,
+            facecolor=twistingmoment.color,
+            edgecolor=twistingmoment.color,
+            alpha=alpha
+        )
+
+        axs.add_patch(triangle)        
+
+        # extra_head = FancyArrow(second_tip[0],  
+        #                         second_tip[1], 
+        #                         dx=tip[0]-second_tip[0], 
+        #                         dy=tip[1]-second_tip[1],
+        #                             width=1e-6,
+        #                             head_width=0.15*length,
+        #                             head_length=0.15*length,
+        #                             length_includes_head=True,
+        #                             facecolor=twistingmoment.color,
+        #                             edgecolor=twistingmoment.color,
+        #                             alpha=alpha)
+
+        # axs.add_patch(extra_head)
+
+        umin = 0.1
+        umax = 0.1
+        u = umin + scaler * (umax - umin)
+        x = start[0]
+        if twistingmoment.labelx == 'left':
+            x -= 2*u * length
+        if twistingmoment.labelx == 'right':
+            x += 2*u * length
+
+        y = start[1]
+        if twistingmoment.labely == 'top':
+            y += u * length
+        if twistingmoment.labely == 'bottom':
+            y -= u * length 
+        if twistingmoment.value is not None:
+            axs.annotate(text=str(twistingmoment.value) + ' ' + twistingmoment.unit, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+        else:
+            axs.annotate(text=twistingmoment.alt_label, xy=(x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+
+        if twistingmoment.anglelabel: 
+            dx1 = (1 - 2*int(twistingmoment.labelflip)) * ddx/3
+            dy1 = (1 - 2*int(twistingmoment.labelflip)) * ddy/3
+            midx = (tip[0] + start[0])/2
+            midy = (tip[1] + start[1])/2
+            dx = int(abs(twistingmoment.dx)*100)
+            dy = int(abs(twistingmoment.dy)*100)
+            gcd = np.gcd(dx, dy)
+            dx = int(dx/gcd)
+            dy = int(dy/gcd)
+            umin = 0.2
+            umax = 0.6
+            u = umin + scaler*(umax-umin)
+            plt.plot([midx-dx1/2,midx+dx1/2,midx+dx1/2],[midy-dy1/2,midy-dy1/2,midy+dy1/2],linewidth=1,color="black")
+            axs.annotate(text=str(dy), xy=(midx + 0.5*dx1 + u*dx1/abs(dx1), midy), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
+            axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
+
+    for p in structure._twistingmoments:
+        drawtwistingmoment(p)        
 
     def drawpointload(pointload: PointLoad) -> None:
         """draws a pointload on the plot using matplotlib
@@ -699,7 +841,6 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             axs.annotate(text=str(dx), xy=(midx, midy - 0.5*dy1 - u*dy1/abs(dy1)), ha='center',va='center', fontname='Times New Roman', alpha=alpha)
 
     for p in structure._pointloads:
-        print(p)
         drawpointload(p)
 
     def drawdistributedload(dload: DistributedLoad) -> None:
@@ -918,7 +1059,6 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         n_spikes = 10
         length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
         spike_length = length / n_spikes
-        spike_angle = np.arctan2(y2 - y1, x2 - x1)
         spike_x = np.linspace(0, length, n_spikes*2+1)
         spike_y = np.linspace(0, 0, n_spikes*2+1)
         for i in range(len(spike_x)):
@@ -926,7 +1066,6 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
                 spike_y[i] += 2*spike_length
             if (i+1) % 4 == 0:
                 spike_y[i] -= 2*spike_length
-        print(spike_y)
         spike_x_rotated, spike_y_rotated = zip(*(rotate_point(Beam(tspring.startpoint, tspring.endpoint), xi, yi)
                                             for xi, yi in zip(spike_x, spike_y)))
         plt.plot(spike_x_rotated, spike_y_rotated, color='black', linewidth=1, alpha=alpha)
