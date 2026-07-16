@@ -22,43 +22,21 @@ FORCE_COLORS = {
     'blue': '#31859B',
 }
 
-
-def resolve_force_color(color: str) -> str:
-    if color not in FORCE_COLORS:
-        raise ValueError("Force color must be one of: 'red', 'green', 'blue'")
-    return FORCE_COLORS[color]
-
-def rotate_point(beam, x, y):
-    a = np.radians(beam.angle)
-    print(a)
-    return (beam.x1 + x*np.cos(a) - y*np.sin(a),
-            beam.y1 + x*np.sin(a) + y*np.cos(a))
-
-def rotate_point_reverse(beam, x, y):
-    a = np.radians(beam.angle)
-    print(a)
-    return (beam.x1 - x*np.cos(a) + y*np.sin(a),
-            beam.y1 - x*np.sin(a) - y*np.cos(a))
-
-def parabole(x1, y1, x2, y2, x3, y3):
-    A = np.array([[x1**2, x1, 1], 
-                  [x2**2, x2, 1], 
-                  [x3**2, x3, 1]])
-    print(A)
-    b_ = np.array([[y1],
-                   [y2],
-                   [y3]])
-    a, b, c = np.linalg.solve(A,b_)
-    print(a, b, c)
-    parlist = []
-    for x in np.linspace(x1, x3, 100):
-        y = a*x**2 + b*x + c
-        parlist.append((x, y))
-    return parlist
-
-
 class Point():
-    def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0, is_opaque: bool = False, is_dashed: bool = False):
+    """Point class represents a point in 2D space with optional label and display properties.
+    """
+    def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0, is_opaque: bool = False, is_dashed: bool = False) -> None:
+        """ function to create a point in 2D space with optional label and display properties.
+
+        Args:
+            x (float): x-coordinate of the point.
+            y (float): y-coordinate of the point.
+            label (str, optional): Label for the point. Defaults to ''.
+            labelpos (tuple[str,str], optional): Position of the label. Defaults to ('top', 'center').
+            z (float, optional): z-coordinate of the point. Defaults to 0.
+            is_opaque (bool, optional): Whether the point is opaque. Defaults to False.
+            is_dashed (bool, optional): Whether the point is dashed. Defaults to False.
+        """
         self.x = x
         self.y = y
         self.z = z
@@ -68,23 +46,26 @@ class Point():
         self.is_opaque = is_opaque
         self.is_dashed = is_dashed
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Point {self.label}: x={self.x}, y={self.y}, z={self.z}'
     
-    def angle(self, point):
+    def angle(self, point: "Point") -> float:
+        """Returns the angle in degrees between the line connecting this point to another point and the positive x-axis."""
         return degrees(atan2(self.y - point.y, self.x - point.x))
     
-    def distance_to(self, point):
+    def distance_to(self, point: "Point") -> float:
+        """Returns the Euclidean distance between this point and another point."""
         return sqrt((self.x - point.x)**2 + (self.y - point.y)**2)
         
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
-    def make_dashed(self):
+    def make_dashed(self) -> None:
         self.is_dashed = True
 
 class Beam():
-    def __init__(self, begin: Point, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False, is_dashed:bool=False):
+    """Beam class represents a beam in 2D space defined by its start and end points, with optional label and display properties."""
+    def __init__(self, begin: Point, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False, is_dashed:bool=False) -> None:
         self.begin = begin
         self.x1 = begin.x
         self.y1 = begin.y
@@ -101,38 +82,43 @@ class Beam():
         self.hinges = []
         
     @property
-    def length(self):
+    def length(self) -> float:
+        """Returns the length of the beam."""
         return sqrt((self.x2 - self.x1)**2 + (self.y2 - self.y1)**2)
     
     @property
-    def angle(self):
+    def angle(self) -> float:
+        """Returns the angle of the beam in degrees."""
         return degrees(atan2(self.y2 - self.y1, self.x2 - self.x1))  
     
-    def add_hinge(self, loc: str = 'start'):
+    def add_hinge(self, loc: str = 'start') -> None:
         if loc == 'start':
             self.hinges.append((self.begin, True))
         else:
             self.hinges.append((self.end, False))
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
-    def make_dashed(self):
+    def make_dashed(self) -> None:
         self.is_dashed = True
 
 class ParabolicBeam(Beam):
-    def __init__(self, begin: Point, mid_deflection: float, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False):
+    """ParabolicBeam class represents a parabolic beam in 2D space defined by its start and end points, with optional label and display properties.
+    The parabolic shape is defined by the mid_deflection parameter, which specifies the maximum deflection of the beam at its midpoint."""
+    def __init__(self, begin: Point, mid_deflection: float, end: Point, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False) -> None:
         super().__init__(begin, end, label, labelpos, anglelabel, anglelabelflip, is_opaque)
         self.ym = mid_deflection
 
 class DeformedBeam(Beam):
-    def __init__(self, begin: Point, end: Point, variable=sympy.symbols('x'), expression=0, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False):
+    """DeformedBeam class represents a deformed beam in 2D space defined by its start and end points, with optional label and display properties."""
+    def __init__(self, begin: Point, end: Point, variable=sympy.symbols('x'), expression=0, label:str=None, labelpos:tuple[str,str]=('top', 'center'), anglelabel:bool=False, anglelabelflip:bool=False, is_opaque:bool=False) -> None:
         super().__init__(begin, end, label, labelpos, anglelabel, anglelabelflip, is_opaque)
         self.function = sympy.lambdify(variable, expression)
 
-
 class Support():
-    def __init__(self, point: Point, support_type: str = 'fixed', angle: float = 0.0, is_opaque: bool = False):
+    """Support class represents a support in 2D space defined by its location and type."""
+    def __init__(self, point: Point, support_type: str = 'fixed', angle: float = 0.0, is_opaque: bool = False) -> None:
         self.loc = point
         self.x = point.x
         self.y = point.y
@@ -140,17 +126,18 @@ class Support():
         self.angle = angle
         self.is_opaque = is_opaque
 
-    def set_type(self, support_type):
+    def set_type(self, support_type) -> None:
         if support_type not in ['fixed', 'roller', 'pinned']:
             raise ValueError("Use either 'pinned', 'roller' or 'fixed' as support type")
         else:
             self._type = support_type
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
 class RotationSpring():
-    def __init__(self, point: Point, value: float=None, unit:str='kNm/rad', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str='', is_opaque: bool = False):
+    """RotationSpring class represents a rotational spring in 2D space defined by its location and properties."""
+    def __init__(self, point: Point, value: float=None, unit:str='kNm/rad', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str='', is_opaque: bool = False) -> None:
         self.x = point.x
         self.y = point.y
         self.value = value
@@ -160,11 +147,12 @@ class RotationSpring():
         self.alt_label = alternative_label
         self.is_opaque = is_opaque
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
 class TranslationSpring():
-    def __init__(self, startpoint: Point, endpoint: Point, value: float=None, unit:str='kN/m', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str='', is_opaque: bool = False):
+    """TranslationSpring class represents a translational spring in 2D space defined by its location and properties."""
+    def __init__(self, startpoint: Point, endpoint: Point, value: float=None, unit:str='kN/m', labelpos:tuple[str,str]=('top', 'center'),alternative_label:str='', is_opaque: bool = False) -> None:
         self.x1 = startpoint.x
         self.y1 = startpoint.y
         self.x2 = endpoint.x
@@ -178,11 +166,12 @@ class TranslationSpring():
         self.alt_label = alternative_label
         self.is_opaque = is_opaque
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
 class PointLoad():
-    def __init__(self, point: Point, value: float, unit: str = 'kN', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False):
+    """PointLoad class represents a point load in 2D space defined by its location and properties."""
+    def __init__(self, point: Point, value: float, unit: str = 'kN', dxdy:tuple[float,float]=(0,1), anglelabel=False, anglelabelflip:bool=False, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False) -> None:
         self.value = value
         self.dx = dxdy[0]
         self.dy = dxdy[1]
@@ -197,11 +186,12 @@ class PointLoad():
         self.color = resolve_force_color(color)
         self.is_opaque = is_opaque
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
         
 class DistributedLoad():
-    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red', is_opaque: bool = False):
+    """DistributedLoad class represents a distributed load in 2D space defined by its location and properties."""
+    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red', is_opaque: bool = False) -> None:
         self.begin_value = begin_value
         self.end_value = end_value if end_value is not None else begin_value
         self.unit = unit
@@ -222,11 +212,12 @@ class DistributedLoad():
         self.color = resolve_force_color(color)
         self.is_opaque = is_opaque
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
 class Moment():
-    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False):
+    """Moment class represents a moment in 2D space defined by its location and properties."""
+    def __init__(self, point: Point, value: float=None, unit: str = 'kNm', clock_wise: bool = True, angle: float = 0.0, labelpos:tuple[str,str]=('top', 'center'), alternative_label: str = None, color: str = 'red', is_opaque: bool = False) -> None:
         if value is not None and value < 0:
             self.value = -value
             self.clock_wise = not clock_wise
@@ -242,11 +233,12 @@ class Moment():
         self.color = resolve_force_color(color)
         self.is_opaque = is_opaque
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
 class Length():
-    def __init__(self, point1: Point, point2: Point, ax: str='x', xpos: str = 'bottom', ypos: str ='left', alternative_label:str = None, is_opaque: bool = False):
+    """Length class represents a length in 2D space defined by its location and properties."""
+    def __init__(self, point1: Point, point2: Point, ax: str='x', xpos: str = 'bottom', ypos: str ='left', alternative_label:str = None, is_opaque: bool = False) -> None:
         self.point1 = point1
         self.point2 = point2
         self.pos = ax
@@ -255,11 +247,89 @@ class Length():
         self.altlabel = alternative_label
         self.is_opaque = is_opaque
 
-    def make_opaque(self):
+    def make_opaque(self) -> None:
         self.is_opaque = True
 
+def resolve_force_color(color: str) -> str:
+    """Turns a color name into a hexcode for plotting.
+
+    Args:
+        color (str): Color name to resolve to hexcode. Must be one of 'red', 'green', 'blue'.
+
+    Raises:
+        ValueError: If color is not in FORCE_COLORS
+
+    Returns:
+        str: hexcode for given color, if not in FORCE_COLORS raises ValueError
+    """
+    if color not in FORCE_COLORS:
+        raise ValueError("Force color must be one of: 'red', 'green', 'blue'")
+    return FORCE_COLORS[color]
+
+def rotate_point(beam: Beam, x: float, y: float) -> tuple[float, float]:
+    """Rotates a point (x, y) around the start point of a beam by the angle of the beam.
+
+    Args:
+        beam (Beam): The beam around which the point will be rotated.
+        x (float): The x-coordinate of the point to be rotated, relative to the start point of the beam.
+        y (float): The y-coordinate of the point to be rotated, relative to the start point of the beam.
+
+    Returns:
+        tuple[float, float]: The coordinates of the rotated point.
+    """
+    a = np.radians(beam.angle)
+    print(a)
+    return (beam.x1 + x*np.cos(a) - y*np.sin(a),
+            beam.y1 + x*np.sin(a) + y*np.cos(a))
+
+def rotate_point_reverse(beam: Beam, x: float, y: float) -> tuple[float, float]:
+    """Rotates a point (x, y) around the start point of a beam by the angle of the beam in the opposite direction.
+
+    Args:
+        beam (Beam): The beam around which the point will be rotated.
+        x (float): The x-coordinate of the point to be rotated, relative to the start point of the beam.
+        y (float): The y-coordinate of the point to be rotated, relative to the start point of the beam.
+
+    Returns:
+        tuple[float, float]: The coordinates of the rotated point.
+    """
+    a = np.radians(beam.angle)
+    print(a)
+    return (beam.x1 - x*np.cos(a) + y*np.sin(a),
+            beam.y1 - x*np.sin(a) - y*np.cos(a))
+
+def parabole(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float) -> list[tuple[float, float]]:
+    """Calculates the points on a parabola defined by three points.
+
+    Args:
+        x1 (float): The x-coordinate of the first point.
+        y1 (float): The y-coordinate of the first point.
+        x2 (float): The x-coordinate of the second point.
+        y2 (float): The y-coordinate of the second point.
+        x3 (float): The x-coordinate of the third point.
+        y3 (float): The y-coordinate of the third point.
+
+    Returns:
+        list[tuple[float, float]]: A list of points on the parabola.
+    """
+    A = np.array([[x1**2, x1, 1], 
+                  [x2**2, x2, 1], 
+                  [x3**2, x3, 1]])
+    b_ = np.array([[y1],
+                   [y2],
+                   [y3]])
+    a, b, c = np.linalg.solve(A,b_)
+    print(a, b, c)
+    parlist = []
+    for x in np.linspace(x1, x3, 100):
+        y = a*x**2 + b*x + c
+        parlist.append((x, y))
+    return parlist
+
+
 class Structure():
-    def __init__(self):
+    """Structure class represents a collection of points, beams, supports, loads, and other elements in 2D space."""
+    def __init__(self) -> None:
         self._points = set()
         self._beams = set()
         self._pointloads = set()
@@ -273,28 +343,28 @@ class Structure():
         self._translationsprings = set()
         self._lengths = set()
 
-    def add_point(self, *points):
+    def add_point(self, *points: Point) -> None:
         for point in points:
             self._points.add(point)
 
-    def add_hinge(self, *points):
+    def add_hinge(self, *points: Point) -> None:
         for point in points:
             self._hinges.add(point)
             self._points.add(point)
 
-    def add_beam(self, *beams):
+    def add_beam(self, *beams: Beam) -> None:
         for beam in beams:
             self._beams.add(beam)
             self.add_point(beam.begin)
             self.add_point(beam.end)
 
-    def add_deformedbeam(self, *deformedbeams):
+    def add_deformedbeam(self, *deformedbeams: DeformedBeam) -> None:
         for deformedbeam in deformedbeams:
             self._deformedbeams.add(deformedbeam)
             self.add_point(deformedbeam.begin)
             self.add_point(deformedbeam.end)
 
-    def add_support(self, *supports):
+    def add_support(self, *supports: Support) -> None:
         for support in supports:
             self.add_point(support.loc)
             if support._type == 'fixed':
@@ -304,40 +374,42 @@ class Structure():
             if support._type == 'pinned':
                 self._pinnedsupports.add(support)
 
-    def add_pointload(self, *pointloads):
+    def add_pointload(self, *pointloads: PointLoad) -> None:
         for pointload in pointloads:
             self._pointloads.add(pointload)
 
-    def add_moment(self, *moments):
+    def add_moment(self, *moments: Moment) -> None:
         for moment in moments:
             self._moments.add(moment)
 
-    def add_distributedload(self, *distributedloads):
+    def add_distributedload(self, *distributedloads: DistributedLoad) -> None:
         for distributedload in distributedloads:
             self._distributedloads.add(distributedload)
 
-    def add_rotationspring(self, *rotationsprings):
+    def add_rotationspring(self, *rotationsprings: RotationSpring) -> None:
         for rotationspring in rotationsprings:
             self._rotationsprings.add(rotationspring)
 
-    def add_translationspring(self, *translationsprings):
+    def add_translationspring(self, *translationsprings: TranslationSpring) -> None:
         for translationspring in translationsprings:
             print(translationspring)
             self._translationsprings.add(translationspring)
 
-    def add_length(self, *lengths: Length):
+    def add_length(self, *lengths: Length) -> None:
         for length in lengths:
             self._lengths.add(length)
 
-    def xminmax(self):
-        xmin = 999
+    def xminmax(self) -> tuple[float, float]:
+        """Returns the minimum and maximum x-coordinates of all points in the structure."""
+        xmin = 999 
         xmax = -999
         for p in self._points:
             xmin = min(p.x, xmin)
             xmax = max(p.x, xmax)
         return xmin, xmax
 
-    def yminmax(self):
+    def yminmax(self) -> tuple[float, float]:
+        """Returns the minimum and maximum y-coordinates of all points in the structure."""
         ymin = 999
         ymax = -999
         for p in self._points:
@@ -345,15 +417,26 @@ class Structure():
             ymax = max(p.y, ymax)
         return ymin, ymax
     
-    def opaque_list(self, *args):
+    def opaque_list(self, *args) -> None:
         for arg in args:
             arg.make_opaque()
 
-    def dashed_list(self, *args):
+    def dashed_list(self, *args) -> None:
         for arg in args:
             arg.make_dashed()
 
-def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True):
+def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: bool = True) -> None:
+    """Plots the given structure using matplotlib.
+
+    Args:
+        structure (Structure): The structure to plot.
+        name (str, optional): The name of the plot. Defaults to None.
+        format (str, optional): The format of the plot. Defaults to 'svg'.
+        is_seed (bool, optional): Whether to use a seed for the plot. Defaults to True.
+
+    Returns:
+        None
+    """
     plt.plot([0,0],[0,0],color='black',linewidth=2)
     print(structure._translationsprings)
     axs = plt.gca()
@@ -372,7 +455,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     # plt.ylim(ymin - 2, ymax + 2)
     #axs.margins(0.2)
 
-    def drawdeformedbeam(deformedbeam: DeformedBeam):
+    def drawdeformedbeam(deformedbeam: DeformedBeam) -> None:
+        """draws a deformed beam on the plot using matplotlib.
+
+        Args:
+            deformedbeam (DeformedBeam): The deformed beam to draw.
+        """
         alpha = 1.0 if not deformedbeam.is_opaque else 0.5
         linestyle = (5, (8, 3)) if deformedbeam.is_dashed else 'solid'
         linewidth = 1 if deformedbeam.is_dashed else 2
@@ -388,7 +476,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         print(xy_list)
         plt.plot([x for x, y in xy_list], [y for x, y in xy_list], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
 
-    def drawbeam(beam: Beam):
+    def drawbeam(beam: Beam) -> None:
+        """draws a beam on the plot using matplotlib.
+
+        Args:
+            beam (Beam): The beam to draw.
+        """
         if isinstance(beam, DeformedBeam):
             drawdeformedbeam(beam)
         else:
@@ -455,7 +548,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for b in structure._beams:
         drawbeam(b)
 
-    def drawpoint(point: Point):
+    def drawpoint(point: Point) -> None:
+        """draws a point on the plot using matplotlib
+
+        Args:
+            point (Point): the point to draw
+        """
         alpha = 1.0 if not point.is_opaque else 0.5
         lmin = 0.2
         lmax = 0.5
@@ -477,7 +575,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for p in structure._points:
         drawpoint(p)
 
-    def drawhinge(hinge):
+    def drawhinge(hinge: Point) -> None:
+        """draws a hinge on the plot using matplotlib
+
+        Args:
+            hinge (Point): The hinge to draw, represented as a Point object with x and y coordinates.
+        """
         alpha = 0.5 if hinge.is_opaque else 1.0
         linestyle = 'solid' if not hinge.is_dashed else (0, (4, 2))
         linewidth = 2 if hinge.is_dashed else 1
@@ -490,7 +593,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for h in structure._hinges:
         drawhinge(h)
 
-    def drawmoment(moment: Moment):
+    def drawmoment(moment: Moment) -> None:
+        """draws a moment on the plot using matplotlib
+
+        Args:
+            moment (Moment): The moment to draw, represented as a Moment object with properties such as point, value, unit, angle, and color.
+        """
         alpha = 1.0 if not moment.is_opaque else 0.5
         angle = moment.angle
         rmin = 0.5
@@ -535,7 +643,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for h in structure._moments:
         drawmoment(h)
 
-    def drawpointload(pointload: PointLoad):
+    def drawpointload(pointload: PointLoad) -> None:
+        """draws a pointload on the plot using matplotlib
+
+        Args:
+            pointload (PointLoad): The pointload to draw, represented as a PointLoad object with properties such as x, y, dx, dy, value, unit, and color.
+        """
         alpha = 1.0 if not pointload.is_opaque else 0.5
         lmin = 0.8
         lmax = 2.5
@@ -589,7 +702,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
         print(p)
         drawpointload(p)
 
-    def drawdistributedload(dload: DistributedLoad):
+    def drawdistributedload(dload: DistributedLoad) -> None:
+        """draws a distributed load on the plot using matplotlib
+
+        Args:
+            dload (DistributedLoad): The distributed load to draw, represented as a DistributedLoad object with properties such as begin, end, begin_value, end_value, angle, n_arrow, and color.
+        """
         alpha = 1.0 if not dload.is_opaque else 0.5
         lmin = 0.6
         lmax = 2.5
@@ -652,7 +770,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for d in structure._distributedloads:
         drawdistributedload(d)
 
-    def drawfixedsupport(support: Support):
+    def drawfixedsupport(support: Support) -> None:
+        """draws a fixed support on the plot using matplotlib
+
+        Args:
+            support (Support): The fixed support to draw, represented as a Support object with properties such as x, y, angle, and is_opaque.
+        """
         alpha = 1.0 if not support.is_opaque else 0.5
         angle = support.angle
         #angle = 30
@@ -697,7 +820,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for f in structure._fixedsupports:
         drawfixedsupport(f)
 
-    def drawrollersupport(support: Support):
+    def drawrollersupport(support: Support) -> None:
+        """draws a roller support on the plot using matplotlib
+
+        Args:
+            support (Support): The roller support to draw, represented as a Support object with properties such as x, y, angle, and is_opaque.
+        """
         alpha = 1.0 if not support.is_opaque else 0.5
         basetriangle = np.array([[0,0], [-0.67, -1], [0.67, -1], [0,0]])
         baseline1 = np.array([[-1, -1], [1, -1]])
@@ -729,7 +857,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for r in structure._rollersupports:
         drawrollersupport(r) 
 
-    def drawpinnedsupport(support: Support):
+    def drawpinnedsupport(support: Support) -> None:
+        """draws a pinned support on the plot using matplotlib
+
+        Args:
+            support (Support): The pinned support to draw, represented as a Support object with properties such as x, y, angle, and is_opaque.
+        """
         alpha = 1.0 if not support.is_opaque else 0.5
         basetriangle = np.array([[0,0], [-0.67, -1], [0.67, -1], [0,0]])
         baseline1 = np.array([[-1, -1], [1, -1]])
@@ -755,7 +888,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for p in structure._pinnedsupports:
         drawpinnedsupport(p)
 
-    def drawrotationspring(rspring):
+    def drawrotationspring(rspring: RotationSpring) -> None:
+        """draws a rotation spring on the plot using matplotlib
+
+        Args:
+            rspring (RotationSpring): The rotation spring to draw, represented as an object with properties such as x, y, and is_opaque.
+        """
         alpha = 1.0 if not rspring.is_opaque else 0.5
         theta = np.radians(np.linspace(2,360*2,1000))
         rmin = 0.025
@@ -768,7 +906,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for r in structure._rotationsprings:
         drawrotationspring(r)
 
-    def drawtranslationspring(tspring):
+    def drawtranslationspring(tspring: TranslationSpring) -> None:
+        """draws a translation spring on the plot using matplotlib
+
+        Args:
+            tspring (TranslationSpring): The translation spring to draw, represented as an object with properties such as x1, x2, y1, y2, and is_opaque.
+        """
         alpha = 1.0 if not tspring.is_opaque else 0.5
         x1, x2 = tspring.x1, tspring.x2
         y1, y2 = tspring.y1, tspring.y2
@@ -791,7 +934,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     for t in structure._translationsprings:
         drawtranslationspring(t)
     
-    def drawlength(length: Length):
+    def drawlength(length: Length) -> None:
+        """draws a length on the plot using matplotlib
+
+        Args:
+            length (Length): The length to draw, represented as a Length object with properties such as point1, point2, pos, xpos, ypos, altlabel, and is_opaque.
+        """
         alpha = 1.0 if not length.is_opaque else 0.5
         if length.pos == 'x':
             x1 = length.point1.x
@@ -872,11 +1020,12 @@ def plot(structure, name: str = None, format: str = 'svg', is_seed: bool = True)
     plt.show()
 
 class MVNgraph():
-    def __init__(self):
+    """Class for plotting bending moment, shear force and normal force diagrams for beams."""
+    def __init__(self) -> None:
         self.points = {}
         self.scale = 100
 
-    def parabole(self, x1, y1, x2, y2, x3, y3):
+    def parabole(self, x1: float, y1: float, x2: float, y2: float, x3: float, y3: float) -> list:
         A = np.array([[x1**2, x1, 1], 
                       [x2**2, x2, 1], 
                       [x3**2, x3, 1]])
@@ -890,18 +1039,38 @@ class MVNgraph():
             parlist.append((x, y))
         return [parlist, x1, y1, x2, y2, x3, y3]
 
-    def interpolate_y(self, xs, ys, x_query):
+    def interpolate_y(self, xs: list, ys: list, x_query: float) -> float:
+        """interpolates the y-value for a given x-value based on the provided lists of x and y values.
+
+        Args:
+            xs (list): list of x-values corresponding to the y-values
+            ys (list): list of y-values corresponding to the x-values
+            x_query (float): The x-value for which to interpolate the y-value
+
+        Returns:
+            float: The interpolated y-value
+        """
         for i in range(len(xs) - 1):
             if xs[i] <= x_query <= xs[i + 1]:
                 return ys[i] + (ys[i + 1] - ys[i]) * ((x_query - xs[i]) / (xs[i + 1] - xs[i]))
-            
-    def rotate(self, beam, x, y):
+
+    def rotate(self, beam: Beam, x: float, y: float) -> tuple:
+        """Rotates a point (x, y) around the start point of a beam by the angle of the beam.
+
+    Args:
+        beam (Beam): The beam around which the point will be rotated.
+        x (float): The x-coordinate of the point to be rotated, relative to the start point of the beam.
+        y (float): The y-coordinate of the point to be rotated, relative to the start point of the beam.
+
+    Returns:
+        tuple[float, float]: The coordinates of the rotated point.
+    """
         a = np.radians(beam.angle)
 
         return (beam.x1 + x*np.cos(a) - y*np.sin(a),
                 beam.y1 + x*np.sin(a) + y*np.cos(a))
 
-    def add_beam(self, beam, *pointtuples):
+    def add_beam(self, beam: Beam, *pointtuples) -> None:
         if beam not in self.points:
             self.points[beam] = []
         
@@ -931,10 +1100,19 @@ class MVNgraph():
         self.scale = min(self.scale, abs(beam.length/(2*y_max)))
         self.points[beam] = {"x": x, "y": y, "labels": labels, "flip_sign": False,}
 
-    def flip_sign(self, beam):
+    def flip_sign(self, beam: Beam) -> None:
         self.points[beam]["flip_sign"] = True
 
-    def find_crossings(self, x, y):
+    def find_crossings(self, x: list, y: list) -> list:
+        """finds the x-values where the y-values cross zero or are zero, based on the provided lists of x and y values.
+
+        Args:
+            x (list): list of x-values corresponding to the y-values
+            y (list): list of y-values corresponding to the x-values
+
+        Returns:
+            list: A list of x-values where the y-values cross zero or are zero
+        """
         crossings = []
 
         for i in range(len(x)-1):
@@ -951,7 +1129,7 @@ class MVNgraph():
 
         return crossings
     
-    def plot(self):
+    def plot(self) -> None:
         axs = plt.gca()
         axs.axis("equal")
         axs.axis('off')
@@ -959,7 +1137,7 @@ class MVNgraph():
         for beam in self.points:
             self.plot_beam(axs, beam)
 
-    def plot_beam(self, axs, beam):
+    def plot_beam(self, axs, beam: Beam) -> None:
         data = self.points[beam]
         x = data["x"]
         y = data["y"]
@@ -992,7 +1170,7 @@ class MVNgraph():
         self.plot_labels(axs, beam, labels)
 
 
-    def plot_labels(self, axs, beam, labels):
+    def plot_labels(self, axs, beam: Beam, labels: list) -> None:
         # plot labels at characteristic points
         value, x_label, y_label = zip(*labels)
         y_label = [y_label_i*self.scale for y_label_i in y_label]
@@ -1003,7 +1181,16 @@ class MVNgraph():
 
 
 class Mgraph(MVNgraph):
-    def draw_signs(self, beam, crossings, x, y):
+    """Class for plotting bending moment diagrams for beams."""
+    def draw_signs(self, beam: Beam, crossings: list, x: list, y: list) -> None:
+        """draws the bending moment signs (curved lines) on the plot using matplotlib
+
+        Args:
+            beam (Beam): The beam for which the bending moment diagram is being plotted.
+            crossings (list): A list of x-values where the y-values cross zero or are zero.
+            x (list): A list of x-values corresponding to the y-values.
+            y (list): A list of y-values corresponding to the x-values.
+        """
         y = [yi*self.scale for yi in y]
         # determine position for sign and plot it
         for i in range(len(crossings) - 1):
@@ -1022,7 +1209,15 @@ class Mgraph(MVNgraph):
 
                    
 class Vgraph(MVNgraph):
-    def draw_signs(self, beam, crossings, x, y):
+    def draw_signs(self, beam: Beam, crossings: list, x: list, y: list) -> None:
+        """draws the shear force signs ('trappetjes') on the plot using matplotlib
+
+        Args:
+            beam (Beam): The beam for which the shear force diagram is being plotted.
+            crossings (list): A list of x-values where the y-values cross zero or are zero.
+            x (list): A list of x-values corresponding to the y-values.
+            y (list): A list of y-values corresponding to the x-values.
+        """
         y = [yi*self.scale for yi in y]
         # draw shear symbol
         flip_sign = self.points[beam]["flip_sign"]
@@ -1041,7 +1236,15 @@ class Vgraph(MVNgraph):
 
 
 class Ngraph(MVNgraph):
-    def draw_signs(self, beam, crossings, x, y):
+    def draw_signs(self, beam: Beam, crossings: list, x: list, y: list) -> None:
+        """draws the normal force signs (+/-) on the plot using matplotlib
+
+        Args:
+            beam (Beam): The beam for which the normal force diagram is being plotted.
+            crossings (list): A list of x-values where the y-values cross zero or are zero.
+            x (list): A list of x-values corresponding to the y-values.
+            y (list): A list of y-values corresponding to the x-values.
+        """
         y = [yi*self.scale for yi in y]
         # draw +/- symbol
         # determine position for sign and plot it
@@ -1068,12 +1271,6 @@ class Ngraph(MVNgraph):
                                             for xi, yi in zip(x_sign, y_sign)))
                 plt.plot(x_sign_rotated, y_sign_rotated, linewidth=1.5, color='black')
 
-# TODO:
-# 3D 
-# doorsnede plot
+# BUG Hinge in beam gaat niet altijd de goede kant op: wss verschilt het of het wel of niet het begin van de balk is
 
-## Later:
-# - Hinge in beam gaat niet altijd de goede kant op: wss verschilt het of het wel of niet het begin van de balk is
-# - Label positie automatisch vinden
-# radius
 
