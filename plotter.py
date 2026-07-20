@@ -6,6 +6,7 @@ plt.rcParams.update({
     'font.family': 'serif',
     'font.serif': ['Times New Roman'],
     'font.size': 12,
+    'mathtext.fontset': 'stix'
 })
 from matplotlib.patches import Arc, FancyArrowPatch, Polygon, Circle, FancyArrow
 import matplotlib.ticker as plticker
@@ -62,6 +63,18 @@ class Point():
 
     def make_dashed(self) -> None:
         self.is_dashed = True
+
+class LatexLabel():
+    """LatexLabel class """
+    def __init__(self, x: float, y:float, label: str, labelpos:tuple[str,str]=('center', 'center'), is_opaque: bool = False) -> None:
+        self.x = x
+        self.y = y
+        self.label = label
+        self.labelpos = labelpos
+        self.is_opaque = is_opaque
+
+    def make_opaque(self) -> None:
+        self.is_opaque = True
 
 class Beam():
     """Beam class represents a beam in 2D space defined by its start and end points, with optional label and display properties."""
@@ -345,7 +358,9 @@ class Structure():
     """Structure class represents a collection of points, beams, supports, loads, and other elements in 2D space."""
     def __init__(self) -> None:
         self._points = set()
+        self._labels = set()
         self._beams = set()
+        self._deformedbeams = set()
         self._pointloads = set()
         self._moments = set()
         self._twistingmoments = set()
@@ -362,6 +377,10 @@ class Structure():
         for point in points:
             self._points.add(point)
 
+    def add_label(self, *labels: LatexLabel) -> None:
+        for label in labels:
+            self._labels.add(label)
+
     def add_hinge(self, *points: Point) -> None:
         for point in points:
             self._hinges.add(point)
@@ -375,9 +394,11 @@ class Structure():
 
     def add_deformedbeam(self, *deformedbeams: DeformedBeam) -> None:
         for deformedbeam in deformedbeams:
+            print('something is happening')
             self._deformedbeams.add(deformedbeam)
             self.add_point(deformedbeam.begin)
             self.add_point(deformedbeam.end)
+            print(self._deformedbeams)
 
     def add_support(self, *supports: Support) -> None:
         for support in supports:
@@ -472,24 +493,6 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
     # plt.ylim(ymin - 2, ymax + 2)
     #axs.margins(0.2)
 
-    def drawdeformedbeam(deformedbeam: DeformedBeam) -> None:
-        """draws a deformed beam on the plot using matplotlib.
-
-        Args:
-            deformedbeam (DeformedBeam): The deformed beam to draw.
-        """
-        alpha = 1.0 if not deformedbeam.is_opaque else 0.5
-        linestyle = (5, (8, 3)) if deformedbeam.is_dashed else 'solid'
-        linewidth = 1 if deformedbeam.is_dashed else 2
-        x1, y1 = deformedbeam.begin.x, deformedbeam.begin.y
-        x2, y2 = deformedbeam.end.x, deformedbeam.end.y
-        a = np.linspace(0, deformedbeam.length, 1000) # Replace with your desired range and number of points
-        f = deformedbeam.function
-        y_beam = np.full_like(a, f(a))
-        beam = Beam(deformedbeam.begin, deformedbeam.end)
-        xy_list = [rotate_point(beam, xi, yi) for xi, yi in zip(a, y_beam)]
-        plt.plot([x for x, y in xy_list], [y for x, y in xy_list], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
-
     def drawbeam(beam: Beam) -> None:
         """draws a beam on the plot using matplotlib.
 
@@ -519,7 +522,8 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             rmax = 0.6*0.3
             r = rmin + scaler * (rmax - rmin)
             for hinge, is_begin in beam.hinges:
-                h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=linewidth, alpha=alpha, linestyle=linestyle)
+                print(hinge)
+                h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=100, alpha=alpha, linestyle=linestyle)
                 axs.add_patch(h)
 
             midx = (beam.x1+beam.x2)/2
@@ -562,6 +566,37 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
     for b in structure._beams:
         drawbeam(b)
 
+
+    def drawdeformedbeam(deformedbeam: DeformedBeam) -> None:
+        """draws a deformed beam on the plot using matplotlib.
+
+        Args:
+            deformedbeam (DeformedBeam): The deformed beam to draw.
+        """
+        alpha = 1.0 if not deformedbeam.is_opaque else 0.5
+        linestyle = (5, (8, 3)) if deformedbeam.is_dashed else 'solid'
+        linewidth = 1 if deformedbeam.is_dashed else 2
+        x1, y1 = deformedbeam.begin.x, deformedbeam.begin.y
+        x2, y2 = deformedbeam.end.x, deformedbeam.end.y
+        x_beam = np.linspace(0, deformedbeam.length, 1000) # Replace with your desired range and number of points
+        f = deformedbeam.function
+        y_beam = np.full_like(x_beam, f(x_beam))
+        beam = Beam(deformedbeam.begin, deformedbeam.end)
+        xy_list = [rotate_point(beam, xi, yi) for xi, yi in zip(x_beam, y_beam)]
+        plt.plot([x for x, y in xy_list], [y for x, y in xy_list], color='black', linewidth=linewidth, alpha=alpha, linestyle=linestyle)
+        amin = 0.05
+        amax = 0.4
+        a = amin + scaler * (amax - amin)
+        rmin = 0.15*0.3
+        rmax = 0.6*0.3
+        r = rmin + scaler * (rmax - rmin)
+        for hinge, is_begin in deformedbeam.hinges:
+            h = Circle([hinge.x - (1 - 2*int(is_begin))* a*np.cos(np.radians(beam.angle)), hinge.y - (1 - 2*int(is_begin))* a*np.sin(np.radians(beam.angle))], radius=r, facecolor='white',edgecolor='black', zorder=100, alpha=alpha, linestyle=linestyle)
+            axs.add_patch(h)
+
+    for d in structure._deformedbeams:
+        drawdeformedbeam(d)
+
     def drawpoint(point: Point) -> None:
         """draws a point on the plot using matplotlib
 
@@ -597,15 +632,21 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         """
         alpha = 0.5 if hinge.is_opaque else 1.0
         linestyle = 'solid' if not hinge.is_dashed else (0, (4, 2))
-        linewidth = 2 if hinge.is_dashed else 1
         rmin = 0.15
         rmax = 0.6
         r = rmin + scaler*(rmax-rmin)
-        h = Circle([hinge.x,hinge.y], radius=r*0.3, facecolor='white',edgecolor='black', zorder=linewidth, alpha=alpha, linestyle=linestyle)
+        h = Circle([hinge.x,hinge.y], radius=r*0.3, facecolor='white',edgecolor='black', zorder=100, linestyle=linestyle)
         axs.add_patch(h)
 
     for h in structure._hinges:
         drawhinge(h)
+
+    def drawlabel(label: LatexLabel) -> None:
+        alpha = 0.5 if label.is_opaque else 1.0
+        axs.annotate(label.label, (label.x, label.y), alpha=alpha)
+
+    for l in structure._labels:
+        drawlabel(l)
 
     def drawmoment(moment: Moment) -> None:
         """draws a moment on the plot using matplotlib
@@ -730,21 +771,7 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             alpha=alpha
         )
 
-        axs.add_patch(triangle)        
-
-        # extra_head = FancyArrow(second_tip[0],  
-        #                         second_tip[1], 
-        #                         dx=tip[0]-second_tip[0], 
-        #                         dy=tip[1]-second_tip[1],
-        #                             width=1e-6,
-        #                             head_width=0.15*length,
-        #                             head_length=0.15*length,
-        #                             length_includes_head=True,
-        #                             facecolor=twistingmoment.color,
-        #                             edgecolor=twistingmoment.color,
-        #                             alpha=alpha)
-
-        # axs.add_patch(extra_head)
+        axs.add_patch(triangle)       
 
         umin = 0.1
         umax = 0.1
@@ -1371,7 +1398,6 @@ class Vgraph(MVNgraph):
             x_sign_rotated, y_sign_rotated = zip(*(self.rotate(beam, xi, yi)
                                             for xi, yi in zip(x_sign, y_sign)))
             plt.plot(x_sign_rotated, y_sign_rotated, linewidth=1.5, color='black')
-
 
 
 class Ngraph(MVNgraph):
