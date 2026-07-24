@@ -26,7 +26,7 @@ FORCE_COLORS = {
 class Point():
     """Point class represents a point in 2D space with optional label and display properties.
     """
-    def __init__(self, x: float, y:float ,label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0, is_opaque: bool = False, is_dashed: bool = False) -> None:
+    def __init__(self, x: float, y:float, label: str='', labelpos:tuple[str,str]=('top', 'center'),z:float = 0, is_opaque: bool = False, is_dashed: bool = False) -> None:
         """ function to create a point in 2D space with optional label and display properties.
 
         Args:
@@ -204,15 +204,16 @@ class PointLoad():
         
 class DistributedLoad():
     """DistributedLoad class represents a distributed load in 2D space defined by its location and properties."""
-    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, flip: bool = False, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red', is_opaque: bool = False) -> None:
+    def __init__(self, begin_point: Point, end_point: Point, begin_value: float, end_value: float = None, unit: str = 'kN/m', angle: float=90, n_arrow = 6, flip: bool = False, is_twistedmoment=False, labelpos:tuple[str,str]=('top', 'center'), labelpos_end:tuple[str,str]=None, alternative_label_begin: str = None, alternative_label_end: str = None, color: str = 'red', is_opaque: bool = False) -> None:
         self.begin_value = begin_value
         self.end_value = end_value if end_value is not None else begin_value
-        self.unit = unit
+        self.unit = 'kNm' if (is_twistedmoment and unit=='kN/m') else unit
         self.begin = begin_point
         self.end = end_point
         self.angle = angle
         self.n_arrow = n_arrow
         self.flip = flip
+        self.is_twistedmoment = is_twistedmoment
         self.labelx = labelpos[1]
         self.labely = labelpos[0]
         if labelpos_end is not None:
@@ -995,10 +996,128 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         else:
             axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
+    def drawdistributedtwistedmoment(dload: DistributedLoad) -> None:
+        alpha = 1.0 if not dload.is_opaque else 0.5
+        lmin = 0.4
+        lmax = 1.8
+        length_mid = lmin + scaler * (lmax - lmin)
+        beam_length = dload.begin.distance_to(dload.end)
+        beam_angle = dload.end.angle(dload.begin)
+        side_angle = beam_angle + 90 * (1 - 2*int(dload.flip))
+        n_arrow = dload.n_arrow
+        dist = beam_length/n_arrow
+        v_mid = (dload.begin_value + dload.end_value)/2
+        length = length_mid / v_mid * np.linspace(dload.begin_value, dload.end_value, n_arrow)
+
+        # plot line
+        plt.plot([dload.begin.x, dload.begin.x + length[0] * np.cos(np.radians(side_angle)), dload.end.x + length[-1] * np.cos(np.radians(side_angle)), dload.end.x], 
+                 [dload.begin.y, dload.begin.y + length[0] * np.sin(np.radians(side_angle)), dload.end.y + length[-1] * np.sin(np.radians(side_angle)), dload.end.y], 
+                 color=dload.color, linewidth=1, alpha=alpha)
+        # plot arrows
+        beam = Beam(dload.begin, dload.end) if dload.begin_value > 0 else Beam(dload.end, dload.begin)
+        for i in range(n_arrow):
+            length_arrow = 0.7*dist
+            head_length = 0.15*length_arrow
+            x1 = (i+0.1)*dist
+            x2 = x1 + length_arrow
+            y = 0.5*(1-2*dload.flip)*length[0] if dload.begin_value > 0 else 0.5*(2*dload.flip - 1)*length[0]            
+            tip = rotate_point(beam, x2, y)
+            start = rotate_point(beam, x1, y)
+            #axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=dload.color, alpha=alpha))
+
+            main_arrow = FancyArrow(
+                                    start[0],
+                                    start[1],
+                                    dx=tip[0] - start[0],
+                                    dy=tip[1] - start[1],
+                                    width=0.04*length_arrow,
+                                    head_width=0.15*length_arrow,
+                                    head_length=0.15*length_arrow,
+                                    length_includes_head=True,
+                                    color=dload.color,
+                                    alpha=alpha,
+                                )
+
+            axs.add_patch(main_arrow)
+
+            # Direction from second_tip to tip
+            dx = tip[0] - start[0]
+            dy = tip[1] - start[1]
+            norm = np.sqrt(dx**2 + dy**2)
+
+            ux = dx / norm
+            uy = dy / norm
+
+            extra_tip = (tip[0] + head_length * ux, tip[1] + head_length * uy)
+
+            # Perpendicular direction
+            px = -uy
+            py = ux
+
+            # Triangle dimensions
+            head_length = 0.15 * length_arrow
+            head_width = 0.15 * length_arrow
+
+            # Tip point
+            tip_point = np.array(extra_tip)
+
+            # Back of triangle
+            base_center = tip_point - head_length * np.array([ux, uy])
+
+            # Two base corners
+            left = base_center + (head_width / 2) * np.array([px, py])
+            right = base_center - (head_width / 2) * np.array([px, py])
+
+            triangle = Polygon(
+                [tip_point, left, right],
+                closed=True,
+                facecolor=dload.color,
+                edgecolor=dload.color,
+                alpha=alpha
+            )
+
+            axs.add_patch(triangle) 
+
+        # display text at begin point
+        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0]) if dload.begin_value > 0 else rotate_point(beam, 0, (2*dload.flip - 1)*length[0])        
+        if dload.labelx == 'left':
+            x -= 0.4 * length_mid
+        if dload.labelx == 'right':
+            x += 0.4 * length_mid 
+
+        if dload.labely == 'top':
+            y += 0.2 * length_mid 
+        if dload.labely == 'bottom':
+            y -= 0.2 * length_mid 
+        
+        if dload.alt_label_begin is None:
+            axs.annotate(text=str(abs(dload.begin_value)) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+        else:
+            axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+
+        # display text at end point
+        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0]) if dload.begin_value > 0 else rotate_point(beam, 0, (2*dload.flip - 1)*length[0])        
+        if dload.labelx_end == 'left':
+            x -= 0.4 * length_mid
+        if dload.labelx_end == 'right':
+            x += 0.4 * length_mid 
+ 
+        if dload.labely_end == 'top':
+            y += 0.2 * length_mid 
+        if dload.labely_end == 'bottom':
+            y -= 0.2 * length_mid 
+        
+        if dload.alt_label_end is None:
+            axs.annotate(text=str(abs(dload.end_value)) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+        else:
+            axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+
 
     for d in structure._distributedloads:
         dl_angle = d.begin.angle(d.end)
-        if np.isclose(d.angle, dl_angle, atol=5) or np.isclose(abs(d.angle - dl_angle), 180, atol=5):
+        if d.is_twistedmoment:
+            drawdistributedtwistedmoment(d)
+        elif np.isclose(d.angle, dl_angle, atol=5) or np.isclose(abs(d.angle - dl_angle), 180, atol=5):
             drawdistributedloadalongaxis(d)
         else:
             drawdistributedload(d)
@@ -1011,7 +1130,6 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
         """
         alpha = 1.0 if not support.is_opaque else 0.5
         angle = support.angle
-        #angle = 30
         amin = 0.2
         amax = 0.8
         a = amin + scaler * (amax-amin)
