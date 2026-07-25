@@ -481,7 +481,7 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
     plt.plot([0,0],[0,0],color='black',linewidth=2)
     axs = plt.gca()
     axs.axis('equal')
-    axs.axis('off')
+    #axs.axis('off')
     xmin, xmax = structure.xminmax()
     xlength = max(1, xmax - xmin)
     ymin, ymax = structure.yminmax()
@@ -953,17 +953,17 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
                  [dload.begin.y, dload.begin.y + length[0] * np.sin(np.radians(side_angle)), dload.end.y + length[-1] * np.sin(np.radians(side_angle)), dload.end.y], 
                  color=dload.color, linewidth=1, alpha=alpha)
         # plot arrows
-        beam = Beam(dload.begin, dload.end)
+        beam = Beam(dload.begin, dload.end) if dload.begin_value > 0 else Beam(dload.end, dload.begin)
         for i in range(n_arrow):
             x1 = (i+0.1)*dist
             x2 = (i+0.9)*dist
-            y = 0.5*(1-2*dload.flip)*length[0]            
+            y = 0.5*(1-2*dload.flip)*length[0] if dload.begin_value > 0 else 0.5*(2*dload.flip - 1)*length[0]             
             tip = rotate_point(beam, x2, y)
             start = rotate_point(beam, x1, y)
             axs.annotate(text='', xy=tip, xytext=start, arrowprops=dict(arrowstyle='simple',color=dload.color, alpha=alpha))
 
         # display text at begin point
-        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0])      
+        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0]) if dload.begin_value > 0 else rotate_point(beam, beam.length, (2*dload.flip - 1)*length[0])       
         if dload.labelx == 'left':
             x -= 0.4 * length_mid
         if dload.labelx == 'right':
@@ -975,12 +975,12 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             y -= 0.2 * length_mid 
         
         if dload.alt_label_begin is None:
-            axs.annotate(text=str(dload.begin_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+            axs.annotate(text=str(abs(dload.begin_value)) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         else:
             axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
         # display text at end point
-        x, y = rotate_point(beam, beam.length, (1-2*dload.flip)*length[-1])       
+        x, y = rotate_point(beam, beam.length, (1-2*dload.flip)*length[-1]) if dload.begin_value > 0 else rotate_point(beam, 0, (2*dload.flip - 1)*length[-1])       
         if dload.labelx_end == 'left':
             x -= 0.4 * length_mid
         if dload.labelx_end == 'right':
@@ -992,7 +992,7 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             y -= 0.2 * length_mid 
         
         if dload.alt_label_end is None:
-            axs.annotate(text=str(dload.end_value) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
+            axs.annotate(text=str(abs(dload.end_value)) + ' ' + dload.unit, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
         else:
             axs.annotate(text=dload.alt_label_end, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
@@ -1079,7 +1079,8 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             axs.add_patch(triangle) 
 
         # display text at begin point
-        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0]) if dload.begin_value > 0 else rotate_point(beam, 0, (2*dload.flip - 1)*length[0])        
+        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0]) if dload.begin_value > 0 else rotate_point(beam, beam.length, (2*dload.flip - 1)*length[0])        
+        print(x, y)
         if dload.labelx == 'left':
             x -= 0.4 * length_mid
         if dload.labelx == 'right':
@@ -1096,7 +1097,8 @@ def plot(structure: Structure, name: str = None, format: str = 'svg', is_seed: b
             axs.annotate(text=dload.alt_label_begin, xy = (x,y), ha='center', va='center', fontname='Times New Roman', alpha=alpha)
 
         # display text at end point
-        x, y = rotate_point(beam, 0, (1-2*dload.flip)*length[0]) if dload.begin_value > 0 else rotate_point(beam, 0, (2*dload.flip - 1)*length[0])        
+        x, y = rotate_point(beam, beam.length, (1-2*dload.flip)*length[-1]) if dload.begin_value > 0 else rotate_point(beam, 0, (2*dload.flip - 1)*length[-1])        
+        print(x,y)
         if dload.labelx_end == 'left':
             x -= 0.4 * length_mid
         if dload.labelx_end == 'right':
